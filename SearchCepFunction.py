@@ -2,8 +2,8 @@ import requests
 import pyodbc
     
     
-def search_cep(self):
-    cep = self.cep_input.text()
+def search_cep(self,main_window):
+    cep = main_window.cep_input.text()
     cep = cep.zfill(8)
     
     # Connect to your SQL Server database
