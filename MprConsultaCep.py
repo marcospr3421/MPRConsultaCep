@@ -14,6 +14,7 @@ class MainWindow(QMainWindow):
         # Create the input field and search button
         self.cep_input = QLineEdit()
         self.search_button = QPushButton("Procurar")
+        self.cep_input.returnPressed.connect(self.search_button.click)
         self.search_button.clicked.connect(lambda: search_cep(self, self))
         
         # Create the result label
