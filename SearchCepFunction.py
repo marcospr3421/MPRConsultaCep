@@ -22,7 +22,7 @@ def search_cep(self,main_window):
     # If the result is found, display it
     if results:
         self.result_label.setText(str(results))
-        result_list = [f"Transport ID: {result[0]}, CEP Inicial: {result[1]}, CEP Final: {result[2]}, Cidade: {result[3]} Estado: {result[4]}, Transportador: {result[5]}" for result in results]
+        result_list = [f"Transport ID: {result[0]}, Cidade: {result[3]} Estado: {result[4]}, Transportador: {result[5]}" for result in results]
         self.result_label.setText("\n".join(result_list))
     else:
         # If the result is not found, use the Postmon API as a fallback
