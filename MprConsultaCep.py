@@ -11,16 +11,18 @@ def consult_cep(cep):
 
     # Execute the SQL query to retrieve the transport information based on the CEP
     cursor.execute(f"SELECT * FROM TransportTable WHERE '{cep}' BETWEEN CepInicial AND CepFinal")
+    results = cursor.fetchall()
+    # return results
 
-    # Fetch the result
-    result = cursor.fetchone()
+    # # Fetch the result
+    # result = cursor.fetchone()
 
     # Close the database connection
     conn.close()
 
     # If the result is found, return it
-    if result:
-        return result
+    if results:
+        return results
     else:
         # If the result is not found, use the Postmon API as a fallback
         url = f"https://api.postmon.com.br/v1/cep/{cep}"
@@ -33,8 +35,9 @@ def consult_cep(cep):
 
 # Example usage
 cep = input("Enter the CEP: ")
-result = consult_cep(cep)
-if result:
-    print(result)
+cep = cep.zfill(8)
+results = consult_cep(cep)
+if results:
+    print(results)
 else:
     print("CEP not found.")

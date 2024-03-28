@@ -17,6 +17,11 @@ def insert_xlsx_to_sql_table(file_path, table_name):
         # Iterate over the DataFrame rows
         for index, row in df.iterrows():
             # Create the SQL query
+            # Modify the cepInicial and cepFinal columns to include left-sided zeros
+            row['cepInicial'] = str(row['cepInicial']).zfill(8)
+            row['cepFinal'] = str(row['cepFinal']).zfill(8)
+
+            # Create the SQL query
             query = f"INSERT INTO {table_name} ({', '.join(df.columns)}) VALUES ({', '.join(['?'] * len(row))})"
             
             # Execute the SQL query
