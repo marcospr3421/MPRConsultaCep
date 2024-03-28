@@ -1,11 +1,13 @@
 import sys
 from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget
+from PyQt6.QtGui import QIcon
 from SearchCepFunction import search_cep
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("MPRLabs - Consulta CEP - v1.0.0.24")
+        self.setWindowIcon(QIcon("22994_boat_icon.ico"))
         
         # Create the main widget and layout
         widget = QWidget()
