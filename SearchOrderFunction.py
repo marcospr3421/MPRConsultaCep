@@ -1,5 +1,5 @@
 import pyodbc
-import requests
+
 
 def search_order(self,main_window):
     try:
