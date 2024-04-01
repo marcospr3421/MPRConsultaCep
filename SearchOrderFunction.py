@@ -22,7 +22,7 @@ def search_order(self,main_window):
             cursor.execute(f"SELECT * FROM TransportTable WHERE '{dest_cep}' BETWEEN CepInicial AND CepFinal")
             ordersResults = cursor.fetchall()
             self.result_label_order.setText(str(ordersResults))
-            result_list = [f"Cep: {dest_cep}, Cidade: {result[3]} Estado: {result[4]}, Transportador: {result[5]}" for result in ordersResults]
+            result_list = [f"CEP: {dest_cep} - CIDADE: {result[3]} - UF: {result[4]} - TRANSPORTE: {result[5]}" for result in ordersResults]
             self.result_label_order.setText("\n".join(result_list))
         else:
             # If the result is not found, display a message
