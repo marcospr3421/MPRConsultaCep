@@ -3,6 +3,7 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QLineEdit, QPushB
 from PyQt6.QtGui import QIcon
 from SearchCepFunction import search_cep
 from SearchOrderFunction import search_order
+from PyQt6.QtGui import QFont, QIcon
 from PyQt6 import QtGui
 
 class MainWindow(QMainWindow):
@@ -10,11 +11,19 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("MPRLabs - Consulta CEP - v1.0.1.24")
         self.setWindowIcon(QIcon("22994_boat_icon.ico"))
-        self.setGeometry(100, 100, 400, 200)
+        self.setGeometry(150, 150, 450, 200)
+        self.setFixedSize(510, 450)
+        self.setStyleSheet("QMainWindow {background-image: url('mprLabs4sml.jpg'); background-repeat: no-repeat; background-position: center;}")
         
         # Create the main widget and layout
         widget = QWidget()
         layout = QVBoxLayout()
+        font = QFont()
+        font.setFamily("Arial")
+        font.setPointSize(14)
+        font2 = QFont()
+        font2.setFamily("Arial")
+        font2.setPointSize(9)
 
         # Create the input field and search button
         self.cep_input = QLineEdit()
