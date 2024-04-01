@@ -5,6 +5,7 @@ from SearchCepFunction import search_cep
 from SearchOrderFunction import search_order
 from PyQt6.QtGui import QFont, QIcon
 from PyQt6 import QtGui
+from PyQt6 import QtCore
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -75,6 +76,8 @@ class MainWindow(QMainWindow):
         
         # Set the main widget for the main window
         self.setCentralWidget(widget)
+        
+        
     
 
 
