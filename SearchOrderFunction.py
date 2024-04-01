@@ -4,7 +4,7 @@ import requests
 def search_order(self,main_window):
     try:
         order = main_window.order_input.text()
-        #order = order.zfill(20)
+        
         # Connect to your SQL Server database
         conn = pyodbc.connect("Driver={SQL Server};Server=tcp:mprsqlserver.database.windows.net,1433;Database=mprDB02;Uid=azureuser;Pwd=Zaqmko21@;Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;")
 
@@ -25,23 +25,9 @@ def search_order(self,main_window):
             result_list = [f"Cep: {dest_cep}, Cidade: {result[3]} Estado: {result[4]}, Transportador: {result[5]}" for result in ordersResults]
             self.result_label_order.setText("\n".join(result_list))
         else:
-            # If the result is not found, use the Postmon API as a fallback
-            url = f"https://api.postmon.com.br/v1/cep/{cep}"
-            response = requests.get(url)
-            if response.status_code == 200:
-                data = response.json()
-                self.result_label_cep.setText(str(data))
-            else:
-                self.result_label_cep.setText("CEP not found.")
-            # another_results = cursor.fetchall()
-            # another_results = [f"Transport ID: {another_results[0]}, Cidade: {another_results[3]} Estado: {another_results[4]}, Transportador: {another_results[5]}"]
-            # self.result_label_order.setText("\n".join(str(result) for result in another_results))
-            # for _ in another_results:
-            #     if len(another_results) >= 6:
-            #         another_results = [f"Transport ID: {another_results[0]}, Cidade: {another_results[3]} Estado: {another_results[4]}, Transportador: {another_results[5]}"]
-                    
-            #     else:
-            #         print("another_results does not have enough elements")
+            # If the result is not found, display a message
+            self.result_label_cep.setText("CEP not found.")
+     
         conn.close()
     except Exception as e:
         print(e)
