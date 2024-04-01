@@ -21,15 +21,15 @@ def search_cep(self,main_window):
     
     # If the result is found, display it
     if results:
-        self.result_label.setText(str(results))
-        result_list = [f"Transport ID: {result[0]}, Cidade: {result[3]} Estado: {result[4]}, Transportador: {result[5]}" for result in results]
-        self.result_label.setText("\n".join(result_list))
+        self.result_label_cep.setText(str(results))
+        result_list = [f"Cidade: {result[3]} Estado: {result[4]}, Transportador: {result[5]}" for result in results]
+        self.result_label_cep.setText("\n".join(result_list))
     else:
         # If the result is not found, use the Postmon API as a fallback
         url = f"https://api.postmon.com.br/v1/cep/{cep}"
         response = requests.get(url)
         if response.status_code == 200:
             data = response.json()
-            self.result_label.setText(str(data))
+            self.result_label_cep.setText(str(data))
         else:
-            self.result_label.setText("CEP not found.")
+            self.result_label_cep.setText("CEP not found.")
