@@ -6,7 +6,7 @@ def search_order(self,main_window):
         order = main_window.order_input.text()
         
         # Connect to your SQL Server database
-        conn = pyodbc.connect("Driver={SQL Server};Server=tcp:mprsqlserver.database.windows.net,1433;Database=mprDB02;Uid=azureuser;Pwd=Zaqmko21@;Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;")
+        conn = pyodbc.connect("Driver={SQL Server};Server=tcp:mprsqlserver.database.windows.net,1433;Database=mprDB02;Uid=azureuser;Pwd=GMNh*DfrdzmFkAZD*UfQq9uix;Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;")
 
         # Create a cursor object to execute SQL queries
         cursor = conn.cursor()
