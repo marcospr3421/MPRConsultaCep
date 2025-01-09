@@ -6,6 +6,7 @@ from SearchOrderFunction import search_order
 from PyQt6.QtGui import QFont, QIcon
 from PyQt6 import QtGui
 from PyQt6 import QtCore
+from testeCep import consultar_cep
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -25,6 +26,12 @@ class MainWindow(QMainWindow):
         font2 = QFont()
         font2.setFamily("Arial")
         font2.setPointSize(9)
+        
+        # Set the layout for the main widget
+        widget.setLayout(layout)
+        
+        # Set the main widget for the main window
+        self.setCentralWidget(widget)
 
         # Create the input field and search button
         self.cep_input = QLineEdit()
@@ -46,6 +53,7 @@ class MainWindow(QMainWindow):
         self.order_input.returnPressed.connect(self.search_button_order.click)
         self.search_button_order.clicked.connect(lambda: search_order(self, self))
 
+
         # Create the result label
         self.result_label_cep = QLabel()
         self.result_label_cep.setStyleSheet("background-color: white")
@@ -66,16 +74,36 @@ class MainWindow(QMainWindow):
         order_label = QLabel("PROCURE POR PEDIDO")
         order_label.setStyleSheet("font-family: Arial; font-size: 12pt; font-weight: bold; color: #FE9900; background-color: rgba(71, 71, 71, 0.95)")
         layout.addWidget(order_label)
-        layout.addWidget(self.order_input)
-        layout.addWidget(self.search_button_order)
-        layout.addWidget(self.result_label_order)
-        layout.addStretch()
+        layout.addWidget(self.order_input)        
+        self.search_button_correios = QPushButton("Procurar CEP Correios")
+        self.search_button_correios.setStyleSheet("background-color: lightblue")
+        self.cep_input_correios = QLineEdit()
+        self.cep_input_correios.setStyleSheet("background-color: #FFFF66")
+        self.cep_input_correios.setMaxLength(8)
+        self.cep_input_correios.setValidator(QtGui.QIntValidator())
+        self.cep_input_correios.returnPressed.connect(self.search_button_correios.click)
+        self.search_button_correios.clicked.connect(self.search_correios)
+        layout.addWidget(self.cep_input_correios)
+        layout.addWidget(self.search_button_correios)
+        self.result_label_correios = QLabel()
+        self.result_label_correios.setStyleSheet("background-color: white")
+        layout.addWidget(self.result_label_correios)
+
+    def search_correios(self):
+        cep = self.cep_input_correios.text()
+        token = "eyJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE3MzYzNjExODIsImlzcyI6InRva2VuLXNlcnZpY2UiLCJleHAiOjE3MzY0NDc1ODIsImp0aSI6IjhmNjVlNjEyLWIwYmEtNGI3Zi1iMWJlLTAxMTVlMDI0N2IyNCIsImFtYmllbnRlIjoiUFJPRFVDQU8iLCJwZmwiOiJQSiIsImlwIjoiNDUuMjI3LjYxLjI0NiwgMTkyLjE2OC4xLjEzMCIsImNhdCI6IlBsMCIsImNvbnRyYXRvIjp7Im51bWVybyI6Ijk5MTIzNzM3MzQiLCJkciI6NzIsImFwaXMiOlt7ImFwaSI6Mjd9LHsiYXBpIjozNH0seyJhcGkiOjM1fSx7ImFwaSI6NDF9LHsiYXBpIjo3Nn0seyJhcGkiOjc4fSx7ImFwaSI6ODd9LHsiYXBpIjo1NjZ9LHsiYXBpIjo1ODZ9LHsiYXBpIjo1ODd9LHsiYXBpIjo2MjF9LHsiYXBpIjo2MjN9XX0sImlkIjoiYXpjb21lcmNpbyIsImNucGoiOiIyMDM4NDg0OTAwMDExMyJ9.l8zENOSVUqIBfPquRPQjBRhPLilnHCDklJtGHxU2e1obHpSsZ9au_AMTdv7sWksdcOE_IaCTmfm0pmjPK01G9atRrf7GBq1Eh1Z2d-YmPkyFnEYbV1zF3pLgACYYmCdFxuvXR0uhCteWIeTz5Wn1-DIVT2CkpgKxGr2uq3QzBnuGUtmQZeXW0wdHZ6ebmRu9GeagG4lm-i3fTvweyBQnWGFCCZj9wlwKNTmfwyv-zApCenWGqVUZDXaPIgqc6CP6lb7oLCuwXSKYrRzKI4qYg9cBYkTCc60oWfJvRR0ci4OB-LNZu-vpdjGGf7cs5hauVUQ0eeJGFwV3kqgGTQeHWw'"
+        dados_cep = consultar_cep(cep, token)
+        if dados_cep != None:
+            print("\nInformações do CEP:")
+            for chave, valor in dados_cep.items():
+                print(f"{chave}: {valor}")
+                self.result_label_correios.setText(str(dados_cep))
+        else:
+            self.result_label_correios.setText("CEP não encontrado")
+            
+
         
-        # Set the layout for the main widget
-        widget.setLayout(layout)
         
-        # Set the main widget for the main window
-        self.setCentralWidget(widget)
         
         
     
