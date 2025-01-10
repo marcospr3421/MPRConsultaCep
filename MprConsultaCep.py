@@ -13,11 +13,35 @@ class ResultWindow(QDialog):
         super().__init__()
         self.setWindowTitle("Resultado da Consulta")
         layout = QVBoxLayout()
-        result_label = QLabel(result_text)
-        result_label.setStyleSheet("background-color: white; font-family: monospace;")  # Use monospace font
-        result_label.setTextFormat(Qt.TextFormat.PlainText)  # Ensure plain text display
-        layout.addWidget(result_label)
+
+        # Split the result text into lines
+        lines = result_text.split('\n')        
+        for i, line in enumerate(lines):
+            if ',' in line:
+                items = line.split(',')
+                for item in items:
+                    result_label = QLabel(item.strip())
+                    result_label.setStyleSheet("background-color: white; font-family: monospace;")
+                    result_label.setTextFormat(Qt.TextFormat.PlainText)
+                    layout.addWidget(result_label)
+            else:
+                result_label = QLabel(line)
+                result_label.setStyleSheet("background-color: white; font-family: monospace;")
+                result_label.setTextFormat(Qt.TextFormat.PlainText)
+                layout.addWidget(result_label)
+
+
+        # Create a label for each line
+        for line in lines:
+            result_label = QLabel(line)
+            result_label.setStyleSheet("background-color: white; font-family: monospace;")
+            result_label.setTextFormat(Qt.TextFormat.PlainText)
+            layout.addWidget(result_label)
+
         self.setLayout(layout)
+
+        
+    
     
     
     
@@ -149,6 +173,7 @@ class MainWindow(QMainWindow):
         self.cep_input.setFocus()
         
     def search_cep_func(self):
+        
         cep = self.cep_input.text()
         if not cep:  # Check if CEP is empty
             QMessageBox.warning(self, "Error", "CEP field cannot be empty.")
@@ -160,7 +185,11 @@ class MainWindow(QMainWindow):
         if not order:  # Check if ORDER is empty
             QMessageBox.warning(self, "Error", "ORDER field cannot be empty.")
             return
-        search_order(self, self)
+        order = search_order(self, self)
+        if order:
+            self.display_result(order, self.result_label_order)
+        else:
+            QMessageBox.warning(self, "Error", "Order not found.")
         
     def consultar_cep_func(self):  # Rename for clarity (was just consultar_cep)
         cep_correios = self.cepCorreios_input.text() # Get the TEXT of the input
@@ -170,7 +199,7 @@ class MainWindow(QMainWindow):
             return
         
         # Pass the CEP string, NOT 'self'.  Remove unnecessary second argument.
-        dados_cep = consultar_cep(cep_correios, "eyJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE3MzYzNjExODIsImlzcyI6InRva2VuLXNlcnZpY2UiLCJleHAiOjE3MzY0NDc1ODIsImp0aSI6IjhmNjVlNjEyLWIwYmEtNGI3Zi1iMWJlLTAxMTVlMDI0N2IyNCIsImFtYmllbnRlIjoiUFJPRFVDQU8iLCJwZmwiOiJQSiIsImlwIjoiNDUuMjI3LjYxLjI0NiwgMTkyLjE2OC4xLjEzMCIsImNhdCI6IlBsMCIsImNvbnRyYXRvIjp7Im51bWVybyI6Ijk5MTIzNzM3MzQiLCJkciI6NzIsImFwaXMiOlt7ImFwaSI6Mjd9LHsiYXBpIjozNH0seyJhcGkiOjM1fSx7ImFwaSI6NDF9LHsiYXBpIjo3Nn0seyJhcGkiOjc4fSx7ImFwaSI6ODd9LHsiYXBpIjo1NjZ9LHsiYXBpIjo1ODZ9LHsiYXBpIjo1ODd9LHsiYXBpIjo2MjF9LHsiYXBpIjo2MjN9XX0sImlkIjoiYXpjb21lcmNpbyIsImNucGoiOiIyMDM4NDg0OTAwMDExMyJ9.l8zENOSVUqIBfPquRPQjBRhPLilnHCDklJtGHxU2e1obHpSsZ9au_AMTdv7sWksdcOE_IaCTmfm0pmjPK01G9atRrf7GBq1Eh1Z2d-YmPkyFnEYbV1zF3pLgACYYmCdFxuvXR0uhCteWIeTz5Wn1-DIVT2CkpgKxGr2uq3QzBnuGUtmQZeXW0wdHZ6ebmRu9GeagG4lm-i3fTvweyBQnWGFCCZj9wlwKNTmfwyv-zApCenWGqVUZDXaPIgqc6CP6lb7oLCuwXSKYrRzKI4qYg9cBYkTCc60oWfJvRR0ci4OB-LNZu-vpdjGGf7cs5hauVUQ0eeJGFwV3kqgGTQeHWw'")  # Replace with your actual token
+        dados_cep = consultar_cep(cep_correios, "eyJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE3MzY0NDc4MjMsImlzcyI6InRva2VuLXNlcnZpY2UiLCJleHAiOjE3MzY1MzQyMjMsImp0aSI6IjhkNzMxNjA2LWViMzQtNDczYy1hNWUzLWNiMzIwNGQwYWVmZSIsImFtYmllbnRlIjoiUFJPRFVDQU8iLCJwZmwiOiJQSiIsImlwIjoiNDUuMjI3LjYxLjI0NiwgMTkyLjE2OC4xLjEzMiIsImNhdCI6IlBsMCIsImNvbnRyYXRvIjp7Im51bWVybyI6Ijk5MTIzNzM3MzQiLCJkciI6NzIsImFwaXMiOlt7ImFwaSI6Mjd9LHsiYXBpIjozNH0seyJhcGkiOjM1fSx7ImFwaSI6NDF9LHsiYXBpIjo3Nn0seyJhcGkiOjc4fSx7ImFwaSI6ODd9LHsiYXBpIjo1NjZ9LHsiYXBpIjo1ODZ9LHsiYXBpIjo1ODd9LHsiYXBpIjo2MjF9LHsiYXBpIjo2MjN9XX0sImlkIjoiYXpjb21lcmNpbyIsImNucGoiOiIyMDM4NDg0OTAwMDExMyJ9.vj7b0DFvw3aoRXmCV4DIE5mHubuyFE_bKOsP-_zirXlzMVbZcIAVyU7I6RkgusRVmCEQbhzf5ICOyDX-DHlgaTb17FoyggwjDUpx2fWxZk69RJAU34uENuVABey0kyW4pgL5I90wX95SuuwYG2FIc0SD6c6trxF6lJgCgj765FpZZLsMMpRO13H31hHmP7wP2aiRSRomlgZ0JOc_dyI550jXFX7W2FSQfelCfzRReZ5JMrJsbtg2xvU4MGQbFb69XTiEEldOb4bA_bbw-LDjDeBnTktKZISEKrtq7yhwV8yQUGnlbGBg3c-0oaTGyRgBPoxJghi-C_DRwYM3pgHVXQ'")  # Replace with your actual token
 
         if dados_cep:
             self.display_result(str(dados_cep), self.result_label_cepCorreios_input)
@@ -179,10 +208,18 @@ class MainWindow(QMainWindow):
 
 
         
-    def display_result(self, result_text, label): #Generalized function for displaying results
-        if isinstance(result_text, list): #handles list results from database queries
-            result_text = "\n".join([str(item) for item in result_text] ) #Format nicely
+    # def display_result(self, result_text, label): #Generalized function for displaying results
+    #     if isinstance(result_text, list): #handles list results from database queries
+    #         result_text = "\n".join([str(item) for item in result_text] ) #Format nicely
 
+
+    #     if result_text:
+    #         self.result_window = ResultWindow(result_text)
+    #         self.result_window.exec()
+            
+    def display_result(self, result_text, label):  # Generalized function, removed label argument
+        if isinstance(result_text, list) or isinstance(result_text, tuple):
+            result_text = "\n".join([str(item) for item in result_text])
 
         if result_text:
             self.result_window = ResultWindow(result_text)
