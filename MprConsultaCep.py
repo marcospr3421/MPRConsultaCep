@@ -7,6 +7,45 @@ from PyQt6.QtCore import Qt
 from SearchCepFunction import search_cep
 from SearchOrderFunction import search_order
 from testeCep import consultar_cep
+import requests
+import os  # For environment variables (example)
+import json
+
+def refresh_correios_token():
+    url = "https://api.correios.com.br/token/v1/autentica/contrato"
+    headers = {
+        'accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': 'Basic YXpjb21lcmNpbzphQ3hIQjZiczQweGVPS1U4QUx6MVNscVdhZDh1OHBBcFJjVHc5Ymx0' #Stored securely as env var.
+    }
+    data = {
+        "numero": "9912373734",  # Shouldn't change.
+        "dr": 72  # Shouldn't change.
+    }
+
+    try:
+        response = requests.post(url, headers=headers, data=json.dumps(data))
+        response.raise_for_status()
+        response_json = response.json() # Get the full JSON response
+
+        new_token = response_json.get('token') # Extract the "token" field
+
+        if new_token is None:
+            print(f"Unexpected API response: {response_json}")
+            raise ValueError("API did not return a token in the 'token' field.")
+
+        os.environ['CORREIOS_TOKEN'] = new_token  # Store the actual token string
+        print("Token refreshed successfully!")
+        return new_token  # Return the extracted token
+
+
+
+    except requests.exceptions.RequestException as e:
+        print(f"Error refreshing token: {e}")  # Still log for troubleshooting
+        return None # Explicitly return None to signal failure
+
+
+
 
 
 
@@ -176,7 +215,7 @@ class MainWindow(QMainWindow):
         order = self.order_input.text()
 
         if not order:
-            QMessageBox.warning(self, "Error", "CEP field cannot be empty.")
+            QMessageBox.warning(self, "Error", "ORDER field cannot be empty.")
             return
         search_order(self, self)
 
@@ -185,16 +224,21 @@ class MainWindow(QMainWindow):
 
 
 
-    def consultar_cep_func(self):  # Rename for clarity (was just consultar_cep)
-        cep_correios = self.cepCorreios_input.text() # Get the TEXT of the input
-
-        if cep_correios == "":
-            self.show_message("Erro CEP Correios", "CEP NAO INFORMADO", "O campo de CEP nao pode estar vazio. Digite um CEP valido.")
-
+    def consultar_cep_func(self):
+        cep_correios = self.cepCorreios_input.text()
+        token = os.environ.get('CORREIOS_TOKEN') #Fetch the token.  Use string key, not list.
+        if not token:
+            print("Token not available. Refreshing...")
+        token = refresh_correios_token()
+        if token is None:  # Handle refresh failure
+            self.show_message("Token Refresh Failed", "Could not refresh the Correios token.  Check your connection or credentials.")  # Display error message
+            return # Stop further processing
+        if not cep_correios:
+            self.show_message("CEP field cannot be empty", "Please enter a CEP.")
             return
 
-        # Pass the CEP string, NOT 'self'.  Remove unnecessary second argument.
-        dados_cep = consultar_cep(cep_correios, "eyJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE3MzY0NDc4MjMsImlzcyI6InRva2VuLXNlcnZpY2UiLCJleHAiOjE3MzY1MzQyMjMsImp0aSI6IjhkNzMxNjA2LWViMzQtNDczYy1hNWUzLWNiMzIwNGQwYWVmZSIsImFtYmllbnRlIjoiUFJPRFVDQU8iLCJwZmwiOiJQSiIsImlwIjoiNDUuMjI3LjYxLjI0NiwgMTkyLjE2OC4xLjEzMiIsImNhdCI6IlBsMCIsImNvbnRyYXRvIjp7Im51bWVybyI6Ijk5MTIzNzM3MzQiLCJkciI6NzIsImFwaXMiOlt7ImFwaSI6Mjd9LHsiYXBpIjozNH0seyJhcGkiOjM1fSx7ImFwaSI6NDF9LHsiYXBpIjo3Nn0seyJhcGkiOjc4fSx7ImFwaSI6ODd9LHsiYXBpIjo1NjZ9LHsiYXBpIjo1ODZ9LHsiYXBpIjo1ODd9LHsiYXBpIjo2MjF9LHsiYXBpIjo2MjN9XX0sImlkIjoiYXpjb21lcmNpbyIsImNucGoiOiIyMDM4NDg0OTAwMDExMyJ9.vj7b0DFvw3aoRXmCV4DIE5mHubuyFE_bKOsP-_zirXlzMVbZcIAVyU7I6RkgusRVmCEQbhzf5ICOyDX-DHlgaTb17FoyggwjDUpx2fWxZk69RJAU34uENuVABey0kyW4pgL5I90wX95SuuwYG2FIc0SD6c6trxF6lJgCgj765FpZZLsMMpRO13H31hHmP7wP2aiRSRomlgZ0JOc_dyI550jXFX7W2FSQfelCfzRReZ5JMrJsbtg2xvU4MGQbFb69XTiEEldOb4bA_bbw-LDjDeBnTktKZISEKrtq7yhwV8yQUGnlbGBg3c-0oaTGyRgBPoxJghi-C_DRwYM3pgHVXQ'")
+        # Pass the CEP string and token.
+        dados_cep = consultar_cep(cep_correios, token)
 
         if dados_cep:
             self.display_result(str(dados_cep), self.result_label_cepCorreios_input)
