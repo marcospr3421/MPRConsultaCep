@@ -1,7 +1,7 @@
 import sys
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QLabel, QLineEdit,
                              QPushButton, QVBoxLayout, QWidget, QDialog,
-                             QGridLayout, QMessageBox, QStatusBar)
+                             QGridLayout, QMessageBox, QStatusBar, QTabWidget)
 from PyQt6.QtGui import QIcon, QFont, QIntValidator
 from PyQt6.QtCore import Qt
 from SearchCepFunction import search_cep
@@ -142,46 +142,65 @@ class MainWindow(QMainWindow):
         central_widget.setLayout(layout)
         self.setCentralWidget(central_widget)
 
+        # Create the tab widget
+        title_label = QLabel("MPRLabs Transport Finder")
+        title_label.setObjectName("TitleLabel")
+        self.tabs = QTabWidget()
+        layout.addWidget(self.tabs, 0, 0, 1, 2)    # Add tabs to the main layout
 
+        # Order Search Tab
+        order_tab = QWidget()
+        order_layout = QGridLayout()
+        order_tab.setLayout(order_layout)
+        # Add Order widgets to order_layout (order_label, order_input, etc.)
+        self.tabs.addTab(order_tab, "Search by Order")
+
+        # CEP Correios Search Tab
+        cep_correios_tab = QWidget()
+        cep_correios_layout = QGridLayout()
+        cep_correios_tab.setLayout(cep_correios_layout)
+        # Add Correios widgets to cep_correios_layout
+        self.tabs.addTab(cep_correios_tab, "Search by API Correios")
+
+        # CEP Search Tab
+        cep_tab = QWidget()
+        cep_layout = QGridLayout()
+        cep_tab.setLayout(cep_layout)
+        # Add CEP widgets to cep_layout
+        self.tabs.addTab(cep_tab, "Search by CEP")
 
         # Status bar
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
 
 
-        # Title Label (Improved)
-        title_label = QLabel("MPRLabs Transport Finder")
-        title_label.setObjectName("TitleLabel")  # For styling
-        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)  # Center the title
-        layout.addWidget(title_label, 0, 0, 1, 3) # span 3 columns
-
 
 
 
         # Order Search Section
-        order_label = QLabel("Search by ORDER")
+        order_label = QLabel("<b>Search by ORDER</b>")
         order_label.setObjectName("SectionLabel")
-        layout.addWidget(order_label, 1, 0, 1, 2)  # Span 2 columns
+        layout.addWidget(order_label, 1, 0, 1, 2)
         self.order_input = QLineEdit()
-        layout.addWidget(self.order_input, 2, 0, 1, 2)  # Span 2 columns
+        layout.addWidget(self.order_input, 2, 0, 1, 2)
         self.search_button_order = QPushButton("Search Order")
         self.search_button_order.clicked.connect(self.search_order_func) # Connect directly to the new function
-        layout.addWidget(self.search_button_order, 3, 0, 1, 2)  # Span 2 columns
+        layout.addWidget(self.search_button_order, 3, 0, 1, 2)
         self.result_label_order = QLabel()
         layout.addWidget(self.result_label_order, 4, 0, 1, 2)
         
         
         # CEP Correios Search Section
-        cepCorreios_label = QLabel("Search by API Correios")
+        cepCorreios_label = QLabel("<b>Search by API Correios</b>")
         cepCorreios_label.setObjectName("SectionLabel")
-        layout.addWidget(cepCorreios_label, 5, 0, 1, 2)  # Span 2 columns, start below Order section
+        layout.addWidget(cepCorreios_label, 5, 0, 1, 2)
         self.cepCorreios_input = QLineEdit()
         self.cepCorreios_input.setMaxLength(8)
         self.cepCorreios_input.setValidator(QIntValidator())
-        layout.addWidget(self.cepCorreios_input, 6, 0, 1, 2)  # Span 2 columns
+        layout.addWidget(self.cepCorreios_input, 6, 0, 1, 2)
         self.search_button_cepCorreios_input = QPushButton("Search API Correios")
         self.search_button_cepCorreios_input.clicked.connect(self.consultar_cep_func) # Call the correctly named function
-        layout.addWidget(self.search_button_cepCorreios_input, 7, 0, 1, 2)  # Span 2 columns
+        layout.addWidget(self.search_button_cepCorreios_input, 7, 0, 1, 2)
         self.result_label_cepCorreios_input = QLabel()
         layout.addWidget(self.result_label_cepCorreios_input, 8, 0, 1, 2)
 
@@ -197,7 +216,7 @@ class MainWindow(QMainWindow):
         self.search_button_cep.clicked.connect(self.search_cep_func) # Connect directly to the new function
         layout.addWidget(self.search_button_cep, 11, 0, 1, 2)
         self.result_label_cep = QLabel()
-        layout.addWidget(self.result_label_cep, 12, 0, 1, 2) # span two columns
+        layout.addWidget(self.result_label_cep, 12, 0, 1, 2)
 
         self.cep_input.setFocus()
 
@@ -243,7 +262,7 @@ class MainWindow(QMainWindow):
         if dados_cep:
             self.display_result(str(dados_cep), self.result_label_cepCorreios_input)
         else:
-            self.show_message("CEP Não Encontrado", f"CEP digitado: {cep_correios} não foi encontrado ou é inválido.", "Validar o CEP digitado e tentar novamente.")
+            self.show_message("CEP Not Found", f"CEP entered: {cep_correios} was not found or is invalid.", "Validate the entered CEP and try again.")
 
   
 
