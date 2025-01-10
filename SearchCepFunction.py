@@ -1,6 +1,23 @@
 import requests
 import pyodbc
+from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget, QDialog, QMessageBox
     
+class ResultWindow(QDialog):
+    def __init__(self, results):
+        super().__init__()
+        self.setWindowTitle("Search Results")
+        layout = QVBoxLayout()
+
+        if results:
+            for result in results:
+                line = f"CIDADE: {result[3]} - UF: {result[4]} - TRANSPORTE: {result[5]}"
+                result_label = QLabel(line)  # Create label for each result
+                layout.addWidget(result_label)
+        else:
+             layout.addWidget(QLabel("No results found.")) # Clear message if no results
+
+        self.setLayout(layout)
+
     
 def search_cep(self,main_window):
     cep = main_window.cep_input.text()
@@ -21,15 +38,9 @@ def search_cep(self,main_window):
     
     # If the result is found, display it
     if results:
-        self.result_label_cep.setText(str(results))
-        result_list = [f"CIDADE: {result[3]} - UF: {result[4]} - TRANSPORTE: {result[5]}" for result in results]
-        self.result_label_cep.setText("\n".join(result_list))
+        self.result_window = ResultWindow(results) # Create dialog
+        self.result_window.exec() # Show dialog
     else:
-        # If the result is not found, use the Postmon API as a fallback
-        url = f"https://api.postmon.com.br/v1/cep/{cep}"
-        response = requests.get(url)
-        if response.status_code == 200:
-            data = response.json()
-            self.result_label_cep.setText(str(data))
-        else:
-            self.result_label_cep.setText("CEP not found.")
+        QMessageBox.information(self, "Information", "CEP not found.") # Use message box for simple info
+    
+    return results

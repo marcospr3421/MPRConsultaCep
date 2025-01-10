@@ -1,5 +1,5 @@
 import sys
-from PyQt6.QtWidgets import (QApplication, QMainWindow, QLabel, QLineEdit, 
+from PyQt6.QtWidgets import (QApplication, QMainWindow, QLabel, QLineEdit,
                              QPushButton, QVBoxLayout, QWidget, QDialog,
                              QGridLayout, QMessageBox, QStatusBar)
 from PyQt6.QtGui import QIcon, QFont, QIntValidator
@@ -8,6 +8,8 @@ from SearchCepFunction import search_cep
 from SearchOrderFunction import search_order
 from testeCep import consultar_cep
 
+
+
 class ResultWindow(QDialog):
     def __init__(self, result_text):
         super().__init__()
@@ -15,7 +17,7 @@ class ResultWindow(QDialog):
         layout = QVBoxLayout()
 
         # Split the result text into lines
-        lines = result_text.split('\n')        
+        lines = result_text.split('\n')
         for i, line in enumerate(lines):
             if ',' in line:
                 items = line.split(',')
@@ -36,17 +38,9 @@ class ResultWindow(QDialog):
             result_label = QLabel(line)
             result_label.setStyleSheet("background-color: white; font-family: monospace;")
             result_label.setTextFormat(Qt.TextFormat.PlainText)
-            layout.addWidget(result_label)
+
 
         self.setLayout(layout)
-
-        
-    
-    
-    
-    
-
-
 
 
 
@@ -123,22 +117,20 @@ class MainWindow(QMainWindow):
         layout.addWidget(title_label, 0, 0, 1, 3) # span 3 columns
 
 
-        
-        
+
+
         # Order Search Section
         order_label = QLabel("Search by ORDER")
         order_label.setObjectName("SectionLabel")
         layout.addWidget(order_label, 1, 0, 1, 2)  # Span 2 columns
         self.order_input = QLineEdit()
-        self.order_input.setMaxLength(8)
-        self.order_input.setValidator(QIntValidator())
         layout.addWidget(self.order_input, 2, 0, 1, 2)  # Span 2 columns
         self.search_button_order = QPushButton("Search Order")
         self.search_button_order.clicked.connect(self.search_order_func) # Connect directly to the new function
         layout.addWidget(self.search_button_order, 3, 0, 1, 2)  # Span 2 columns
         self.result_label_order = QLabel()
-        # self.result_label_order.setStyleSheet("background-color: #444; border: 1px solid #666;")  #Restyled for consistency
-        # layout.addWidget(self.result_label_order, 4, 0, 1, 2)  # Span 2 columns, next row
+        layout.addWidget(self.result_label_order, 4, 0, 1, 2)
+        
         
         # CEP Correios Search Section
         cepCorreios_label = QLabel("Search by API Correios")
@@ -152,9 +144,8 @@ class MainWindow(QMainWindow):
         self.search_button_cepCorreios_input.clicked.connect(self.consultar_cep_func) # Call the correctly named function
         layout.addWidget(self.search_button_cepCorreios_input, 7, 0, 1, 2)  # Span 2 columns
         self.result_label_cepCorreios_input = QLabel()
-        # self.result_label_cepCorreios_input.setStyleSheet("background-color: #444; border: 1px solid #666;")  #Restyled for consistency
-        # layout.addWidget(self.result_label_cepCorreios_input, 8, 0, 1, 2)  # Span 2 columns
-        
+        layout.addWidget(self.result_label_cepCorreios_input, 8, 0, 1, 2)
+
         # CEP Search Section
         cep_label = QLabel("Search by CEP")
         cep_label.setObjectName("SectionLabel")
@@ -167,63 +158,85 @@ class MainWindow(QMainWindow):
         self.search_button_cep.clicked.connect(self.search_cep_func) # Connect directly to the new function
         layout.addWidget(self.search_button_cep, 11, 0, 1, 2)
         self.result_label_cep = QLabel()
-        self.result_label_cep.setStyleSheet("background-color: #444; border: 1px solid #666;")  #Restyled for consistency
         layout.addWidget(self.result_label_cep, 12, 0, 1, 2) # span two columns
-        
+
         self.cep_input.setFocus()
-        
+
     def search_cep_func(self):
-        
+
         cep = self.cep_input.text()
         if not cep:  # Check if CEP is empty
             QMessageBox.warning(self, "Error", "CEP field cannot be empty.")
             return
         search_cep(self, self)
-        
+
+
+
     def search_order_func(self):
         order = self.order_input.text()
-        if not order:  # Check if ORDER is empty
-            QMessageBox.warning(self, "Error", "ORDER field cannot be empty.")
+
+        if not order:
+            QMessageBox.warning(self, "Error", "CEP field cannot be empty.")
             return
-        order = search_order(self, self)
-        if order:
-            self.display_result(order, self.result_label_order)
-        else:
-            QMessageBox.warning(self, "Error", "Order not found.")
+        search_order(self, self)
+
         
+
+
+
+
     def consultar_cep_func(self):  # Rename for clarity (was just consultar_cep)
         cep_correios = self.cepCorreios_input.text() # Get the TEXT of the input
 
-        if not cep_correios:
-            QMessageBox.warning(self, "Error", "API Correios field cannot be empty.")
+        if cep_correios == "":
+            self.show_message("Erro CEP Correios", "CEP NAO INFORMADO", "O campo de CEP nao pode estar vazio. Digite um CEP valido.")
+
             return
-        
+
         # Pass the CEP string, NOT 'self'.  Remove unnecessary second argument.
-        dados_cep = consultar_cep(cep_correios, "eyJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE3MzY0NDc4MjMsImlzcyI6InRva2VuLXNlcnZpY2UiLCJleHAiOjE3MzY1MzQyMjMsImp0aSI6IjhkNzMxNjA2LWViMzQtNDczYy1hNWUzLWNiMzIwNGQwYWVmZSIsImFtYmllbnRlIjoiUFJPRFVDQU8iLCJwZmwiOiJQSiIsImlwIjoiNDUuMjI3LjYxLjI0NiwgMTkyLjE2OC4xLjEzMiIsImNhdCI6IlBsMCIsImNvbnRyYXRvIjp7Im51bWVybyI6Ijk5MTIzNzM3MzQiLCJkciI6NzIsImFwaXMiOlt7ImFwaSI6Mjd9LHsiYXBpIjozNH0seyJhcGkiOjM1fSx7ImFwaSI6NDF9LHsiYXBpIjo3Nn0seyJhcGkiOjc4fSx7ImFwaSI6ODd9LHsiYXBpIjo1NjZ9LHsiYXBpIjo1ODZ9LHsiYXBpIjo1ODd9LHsiYXBpIjo2MjF9LHsiYXBpIjo2MjN9XX0sImlkIjoiYXpjb21lcmNpbyIsImNucGoiOiIyMDM4NDg0OTAwMDExMyJ9.vj7b0DFvw3aoRXmCV4DIE5mHubuyFE_bKOsP-_zirXlzMVbZcIAVyU7I6RkgusRVmCEQbhzf5ICOyDX-DHlgaTb17FoyggwjDUpx2fWxZk69RJAU34uENuVABey0kyW4pgL5I90wX95SuuwYG2FIc0SD6c6trxF6lJgCgj765FpZZLsMMpRO13H31hHmP7wP2aiRSRomlgZ0JOc_dyI550jXFX7W2FSQfelCfzRReZ5JMrJsbtg2xvU4MGQbFb69XTiEEldOb4bA_bbw-LDjDeBnTktKZISEKrtq7yhwV8yQUGnlbGBg3c-0oaTGyRgBPoxJghi-C_DRwYM3pgHVXQ'")  # Replace with your actual token
+        dados_cep = consultar_cep(cep_correios, "eyJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE3MzY0NDc4MjMsImlzcyI6InRva2VuLXNlcnZpY2UiLCJleHAiOjE3MzY1MzQyMjMsImp0aSI6IjhkNzMxNjA2LWViMzQtNDczYy1hNWUzLWNiMzIwNGQwYWVmZSIsImFtYmllbnRlIjoiUFJPRFVDQU8iLCJwZmwiOiJQSiIsImlwIjoiNDUuMjI3LjYxLjI0NiwgMTkyLjE2OC4xLjEzMiIsImNhdCI6IlBsMCIsImNvbnRyYXRvIjp7Im51bWVybyI6Ijk5MTIzNzM3MzQiLCJkciI6NzIsImFwaXMiOlt7ImFwaSI6Mjd9LHsiYXBpIjozNH0seyJhcGkiOjM1fSx7ImFwaSI6NDF9LHsiYXBpIjo3Nn0seyJhcGkiOjc4fSx7ImFwaSI6ODd9LHsiYXBpIjo1NjZ9LHsiYXBpIjo1ODZ9LHsiYXBpIjo1ODd9LHsiYXBpIjo2MjF9LHsiYXBpIjo2MjN9XX0sImlkIjoiYXpjb21lcmNpbyIsImNucGoiOiIyMDM4NDg0OTAwMDExMyJ9.vj7b0DFvw3aoRXmCV4DIE5mHubuyFE_bKOsP-_zirXlzMVbZcIAVyU7I6RkgusRVmCEQbhzf5ICOyDX-DHlgaTb17FoyggwjDUpx2fWxZk69RJAU34uENuVABey0kyW4pgL5I90wX95SuuwYG2FIc0SD6c6trxF6lJgCgj765FpZZLsMMpRO13H31hHmP7wP2aiRSRomlgZ0JOc_dyI550jXFX7W2FSQfelCfzRReZ5JMrJsbtg2xvU4MGQbFb69XTiEEldOb4bA_bbw-LDjDeBnTktKZISEKrtq7yhwV8yQUGnlbGBg3c-0oaTGyRgBPoxJghi-C_DRwYM3pgHVXQ'")
 
         if dados_cep:
             self.display_result(str(dados_cep), self.result_label_cepCorreios_input)
         else:
-            QMessageBox.warning(self, "Error", "CEP not found or API error.")
+            self.show_message("CEP Não Encontrado", f"CEP digitado: {cep_correios} não foi encontrado ou é inválido.", "Validar o CEP digitado e tentar novamente.")
 
+  
 
-        
-    # def display_result(self, result_text, label): #Generalized function for displaying results
-    #     if isinstance(result_text, list): #handles list results from database queries
-    #         result_text = "\n".join([str(item) for item in result_text] ) #Format nicely
-
-
-    #     if result_text:
-    #         self.result_window = ResultWindow(result_text)
-    #         self.result_window.exec()
-            
-    def display_result(self, result_text, label):  # Generalized function, removed label argument
+    def display_result(self, result_text, label):
+        #  Existing dialog logic
         if isinstance(result_text, list) or isinstance(result_text, tuple):
-            result_text = "\n".join([str(item) for item in result_text])
-
+             result_text = "\n".join([str(item) for item in result_text])       
+        
         if result_text:
-            self.result_window = ResultWindow(result_text)
+            self.result_window = ResultWindow(result_text) #corrected function call
             self.result_window.exec()
+            
+            
+            
+    def show_message(self, title, text,     informative_text=None): # Add parameters
+
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle(title)    # Use the title argument
+        msg_box.setText(text)          # Use the text argument
+
+        if informative_text:  # Set informative text only if provided
+            msg_box.setInformativeText(informative_text)
+
+
+        font = msg_box.font()
+        font.setPointSize(14)
+        font.setBold(True)
+        msg_box.setFont(font)
+
+        msg_box.setStyleSheet("QLabel { color: red; }")
+        msg_box.setIcon(QMessageBox.Icon.Warning)
+
+        msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+        retval = msg_box.exec()
+
+        # ... process retval if needed
+    
 
 
 if __name__ == "__main__":
@@ -231,126 +244,4 @@ if __name__ == "__main__":
     window = MainWindow()
     window.show()
     sys.exit(app.exec())
-        
-        
-        
-        
-        
-#         self.search_button_correios = QPushButton("Procurar CEP Correios")  # Create button
-#         self.search_button_correios.setStyleSheet("background-color: lightblue")
-#         self.cep_input_correios = QLineEdit()  # Create the LineEdit
-#         self.cep_input_correios.setStyleSheet("background-color: #FFFF66")
-#         self.cep_input_correios.setMaxLength(8)
-#         self.cep_input_correios.setValidator(QtGui.QIntValidator())
-#         self.cep_input_correios.returnPressed.connect(self.search_button_correios.click)
-#         self.search_button_correios.clicked.connect(self.search_correios)
-#         self.result_label_correios = QLabel()
-#         self.result_label_correios.setStyleSheet("background-color: white")
-        
-#         # Create the main widget and layout
-#         widget = QWidget()
-#         layout = QVBoxLayout()
-#         font = QFont()
-#         font.setFamily("Arial")
-#         font.setPointSize(14)
-#         font2 = QFont()
-#         font2.setFamily("Arial")
-#         font2.setPointSize(9)
-        
-#         # Set the layout for the main widget
-#         widget.setLayout(layout)
-        
-#         # Set the main widget for the main window
-#         self.setCentralWidget(widget)
 
-#         # Create the input field and search button
-#         self.cep_input = QLineEdit()
-#         self.cep_input.setStyleSheet("background-color: #FFFF66")
-#         self.cep_input.setMaxLength(8)
-#         self.cep_input.setValidator(QtGui.QIntValidator())
-#         self.search_button_cep = QPushButton("Procurar por CEP")
-#         self.search_button_cep.setStyleSheet("background-color: lightgreen")
-#         self.cep_input.returnPressed.connect(self.search_button_cep.click)
-#         self.search_button_cep.clicked.connect(lambda: search_cep(self, self))
-        
-        
-#         # Create the input field and search button
-#         self.order_input = QLineEdit()
-#         self.order_input.setStyleSheet("background-color: #FFFF66")
-#         self.order_input.setMaxLength(20)
-#         self.search_button_order = QPushButton("Procurar por Pedido")
-#         self.search_button_order.setStyleSheet("background-color: lightgreen")
-#         self.order_input.returnPressed.connect(self.search_button_order.click)
-#         self.search_button_order.clicked.connect(lambda: search_order(self, self))
-
-
-#         # Create the result label
-#         self.result_label_cep = QLabel()
-#         self.result_label_cep.setStyleSheet("background-color: white")
-#         self.result_label_order = QLabel()
-#         self.result_label_order.setStyleSheet("background-color: white")
-        
-#         # Add the widgets to the layout
-#         cep_label = QLabel(self)
-#         cep_label.setText("PROCURE POR CEP")
-#         cep_label.setStyleSheet("font-family: Arial; font-size: 12pt; font-weight: bold; color: #FE9900; background-color: rgba(71, 71, 71, 0.95)")
-#         layout.addWidget(cep_label)
-#         layout.addWidget(self.cep_input)
-#         layout.addWidget(self.search_button_cep)
-#         layout.addWidget(self.result_label_cep)
-#         layout.addStretch()
-        
-#         # Define the order_label variable
-#         order_label = QLabel("PROCURE POR PEDIDO")
-#         order_label.setStyleSheet("font-family: Arial; font-size: 12pt; font-weight: bold; color: #FE9900; background-color: rgba(71, 71, 71, 0.95)")
-#         layout.addWidget(order_label)
-#         layout.addWidget(self.order_input)
-#         layout.addWidget(self.search_button_order)
-#         layout.addWidget(self.result_label_order)
-#         layout.addStretch()
-        
-        
-#         correios_label = QLabel("PROCURE POR CEP CORREIOS")
-#         correios_label.setStyleSheet("font-family: Arial; font-size: 12pt; font-weight: bold; color: #FE9900; background-color: rgba(71, 71, 71, 0.95)")
-#         layout.addWidget(correios_label)   
-#         layout.addWidget(self.cep_input_correios)  # Now this will work!
-#         layout.addWidget(self.search_button_correios)
-#         layout.addWidget(self.result_label_correios)
-#         layout.addStretch()
-
-        
-
-        
-
-#     def search_correios(self):
-#         cep = self.cep_input_correios.text()
-#         token = "eyJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE3MzYzNjExODIsImlzcyI6InRva2VuLXNlcnZpY2UiLCJleHAiOjE3MzY0NDc1ODIsImp0aSI6IjhmNjVlNjEyLWIwYmEtNGI3Zi1iMWJlLTAxMTVlMDI0N2IyNCIsImFtYmllbnRlIjoiUFJPRFVDQU8iLCJwZmwiOiJQSiIsImlwIjoiNDUuMjI3LjYxLjI0NiwgMTkyLjE2OC4xLjEzMCIsImNhdCI6IlBsMCIsImNvbnRyYXRvIjp7Im51bWVybyI6Ijk5MTIzNzM3MzQiLCJkciI6NzIsImFwaXMiOlt7ImFwaSI6Mjd9LHsiYXBpIjozNH0seyJhcGkiOjM1fSx7ImFwaSI6NDF9LHsiYXBpIjo3Nn0seyJhcGkiOjc4fSx7ImFwaSI6ODd9LHsiYXBpIjo1NjZ9LHsiYXBpIjo1ODZ9LHsiYXBpIjo1ODd9LHsiYXBpIjo2MjF9LHsiYXBpIjo2MjN9XX0sImlkIjoiYXpjb21lcmNpbyIsImNucGoiOiIyMDM4NDg0OTAwMDExMyJ9.l8zENOSVUqIBfPquRPQjBRhPLilnHCDklJtGHxU2e1obHpSsZ9au_AMTdv7sWksdcOE_IaCTmfm0pmjPK01G9atRrf7GBq1Eh1Z2d-YmPkyFnEYbV1zF3pLgACYYmCdFxuvXR0uhCteWIeTz5Wn1-DIVT2CkpgKxGr2uq3QzBnuGUtmQZeXW0wdHZ6ebmRu9GeagG4lm-i3fTvweyBQnWGFCCZj9wlwKNTmfwyv-zApCenWGqVUZDXaPIgqc6CP6lb7oLCuwXSKYrRzKI4qYg9cBYkTCc60oWfJvRR0ci4OB-LNZu-vpdjGGf7cs5hauVUQ0eeJGFwV3kqgGTQeHWw'"
-#         dados_cep = consultar_cep(cep, token)
-#         if dados_cep:
-#             result_text = ""
-#             for chave, valor in dados_cep.items():
-#                 result_text += f"{chave}: {valor}\n"
-
-#             self.result_window = ResultWindow(result_text)  # Create an instance
-#             self.result_window.exec()  # Show the dialog modally
-
-
-#         else:
-#             self.result_window = ResultWindow("CEP não encontrado")  # For errors
-#             self.result_window.exec()
-
-
-            
-
-        
-        
-        
-        
-    
-
-
-# if __name__ == "__main__":
-#     app = QApplication(sys.argv)
-#     window = MainWindow()
-#     window.show()
-#     sys.exit(app.exec())
