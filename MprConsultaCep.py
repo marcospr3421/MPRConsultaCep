@@ -10,6 +10,8 @@ from testeCep import consultar_cep
 import requests
 import os  # For environment variables (example)
 import json
+import pyodbc
+
 
 def refresh_correios_token():
     url = "https://api.correios.com.br/token/v1/autentica/contrato"
@@ -62,22 +64,20 @@ class ResultWindow(QDialog):
                 items = line.split(',')
                 for item in items:
                     result_label = QLabel(item.strip())
-                    result_label.setStyleSheet("background-color: white; font-family: monospace;")
-                    result_label.setTextFormat(Qt.TextFormat.PlainText)
+                    result_label.setStyleSheet("background-color: black; font-family: monospace; font-size: 20px; color: white;")
+                    result_label.setTextFormat(Qt.TextFormat.PlainText)  # Not strictly necessary for QLabel
+                    result_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse) # Make text selectable
                     layout.addWidget(result_label)
             else:
                 result_label = QLabel(line)
-                result_label.setStyleSheet("background-color: white; font-family: monospace;")
-                result_label.setTextFormat(Qt.TextFormat.PlainText)
+                result_label.setStyleSheet("background-color: black; font-family: monospace; font-size: 20px; color: white;")
+                result_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse) # Make text selectable
                 layout.addWidget(result_label)
 
 
-        # Create a label for each line
-        for line in lines:
-            result_label = QLabel(line)
-            result_label.setStyleSheet("background-color: white; font-family: monospace;")
-            result_label.setTextFormat(Qt.TextFormat.PlainText)
-
+        # Removed redundant loop
+           
+            
 
         self.setLayout(layout)
 
@@ -142,32 +142,7 @@ class MainWindow(QMainWindow):
         central_widget.setLayout(layout)
         self.setCentralWidget(central_widget)
 
-        # Create the tab widget
-        title_label = QLabel("MPRLabs Transport Finder")
-        title_label.setObjectName("TitleLabel")
-        self.tabs = QTabWidget()
-        layout.addWidget(self.tabs, 0, 0, 1, 2)    # Add tabs to the main layout
 
-        # Order Search Tab
-        order_tab = QWidget()
-        order_layout = QGridLayout()
-        order_tab.setLayout(order_layout)
-        # Add Order widgets to order_layout (order_label, order_input, etc.)
-        self.tabs.addTab(order_tab, "Search by Order")
-
-        # CEP Correios Search Tab
-        cep_correios_tab = QWidget()
-        cep_correios_layout = QGridLayout()
-        cep_correios_tab.setLayout(cep_correios_layout)
-        # Add Correios widgets to cep_correios_layout
-        self.tabs.addTab(cep_correios_tab, "Search by API Correios")
-
-        # CEP Search Tab
-        cep_tab = QWidget()
-        cep_layout = QGridLayout()
-        cep_tab.setLayout(cep_layout)
-        # Add CEP widgets to cep_layout
-        self.tabs.addTab(cep_tab, "Search by CEP")
 
         # Status bar
         self.status_bar = QStatusBar()
@@ -178,12 +153,12 @@ class MainWindow(QMainWindow):
 
 
         # Order Search Section
-        order_label = QLabel("<b>Search by ORDER</b>")
+        order_label = QLabel("<b>Procurar dados do Pedido</b>")
         order_label.setObjectName("SectionLabel")
         layout.addWidget(order_label, 1, 0, 1, 2)
         self.order_input = QLineEdit()
         layout.addWidget(self.order_input, 2, 0, 1, 2)
-        self.search_button_order = QPushButton("Search Order")
+        self.search_button_order = QPushButton("Procurar Pedido")
         self.search_button_order.clicked.connect(self.search_order_func) # Connect directly to the new function
         layout.addWidget(self.search_button_order, 3, 0, 1, 2)
         self.result_label_order = QLabel()
@@ -191,28 +166,28 @@ class MainWindow(QMainWindow):
         
         
         # CEP Correios Search Section
-        cepCorreios_label = QLabel("<b>Search by API Correios</b>")
+        cepCorreios_label = QLabel("<b>Procurar CEP Correios API</b>")
         cepCorreios_label.setObjectName("SectionLabel")
         layout.addWidget(cepCorreios_label, 5, 0, 1, 2)
         self.cepCorreios_input = QLineEdit()
         self.cepCorreios_input.setMaxLength(8)
         self.cepCorreios_input.setValidator(QIntValidator())
         layout.addWidget(self.cepCorreios_input, 6, 0, 1, 2)
-        self.search_button_cepCorreios_input = QPushButton("Search API Correios")
+        self.search_button_cepCorreios_input = QPushButton("Procurar Correios")
         self.search_button_cepCorreios_input.clicked.connect(self.consultar_cep_func) # Call the correctly named function
         layout.addWidget(self.search_button_cepCorreios_input, 7, 0, 1, 2)
         self.result_label_cepCorreios_input = QLabel()
         layout.addWidget(self.result_label_cepCorreios_input, 8, 0, 1, 2)
 
         # CEP Search Section
-        cep_label = QLabel("Search by CEP")
+        cep_label = QLabel("Procurar Transportadora por CEP")
         cep_label.setObjectName("SectionLabel")
         layout.addWidget(cep_label, 9, 0, 1, 2)
         self.cep_input = QLineEdit()
         self.cep_input.setMaxLength(8)
         self.cep_input.setValidator(QIntValidator())
         layout.addWidget(self.cep_input, 10, 0, 1, 2)
-        self.search_button_cep = QPushButton("Search CEP")
+        self.search_button_cep = QPushButton("Procurar CEP")
         self.search_button_cep.clicked.connect(self.search_cep_func) # Connect directly to the new function
         layout.addWidget(self.search_button_cep, 11, 0, 1, 2)
         self.result_label_cep = QLabel()
@@ -260,20 +235,22 @@ class MainWindow(QMainWindow):
         dados_cep = consultar_cep(cep_correios, token)
 
         if dados_cep:
-            self.display_result(str(dados_cep), self.result_label_cepCorreios_input)
+            self.display_result(dados_cep, self.result_label_cepCorreios_input)
         else:
             self.show_message("CEP Not Found", f"CEP entered: {cep_correios} was not found or is invalid.", "Validate the entered CEP and try again.")
 
   
 
+    
     def display_result(self, result_text, label):
-        #  Existing dialog logic
-        if isinstance(result_text, list) or isinstance(result_text, tuple):
-             result_text = "\n".join([str(item) for item in result_text])       
-        
         if result_text:
-            self.result_window = ResultWindow(result_text) #corrected function call
+            # Convert the dictionary to a string for ResultWindow
+            string_result = str(result_text)
+            self.result_window = ResultWindow(string_result) # Pass string_result 
             self.result_window.exec()
+
+
+
             
             
             
