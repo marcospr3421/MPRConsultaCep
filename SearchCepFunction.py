@@ -1,22 +1,35 @@
 import requests
 import pyodbc
-from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget, QDialog, QMessageBox
+from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget, QDialog, QMessageBox, QGridLayout
     
 class ResultWindow(QDialog):
     def __init__(self, results):
         super().__init__()
         self.setWindowTitle("Search Results")
-        layout = QVBoxLayout()
+        layout = QGridLayout()
+        row = 0
 
         if results:
             for result in results:
-                line = f"CIDADE: {result[3]} - UF: {result[4]} - TRANSPORTE: {result[5]}"
-                result_label = QLabel(line)  # Create label for each result
-                layout.addWidget(result_label)
+                cidade_label = QLabel(f"Cidade: {result[3]}")
+                uf_label = QLabel(f"UF: {result[4]}")
+                transporte_label = QLabel(f"Transporte: {result[5]}")
+
+                cidade_label.setStyleSheet("font-size: 14px;")
+                uf_label.setStyleSheet("font-size: 14px;")
+                transporte_label.setStyleSheet("font-size: 14px;")
+
+                layout.addWidget(cidade_label, row, 0)
+                layout.addWidget(uf_label, row, 1)
+                layout.addWidget(transporte_label, row, 2)
+                row +=1
         else:
-             layout.addWidget(QLabel("No results found.")) # Clear message if no results
+            no_results_label = QLabel("No results found.")
+            no_results_label.setStyleSheet("font-size: 14px;")
+            layout.addWidget(no_results_label, 0, 0)
 
         self.setLayout(layout)
+
 
     
 def search_cep(self,main_window):
@@ -30,7 +43,7 @@ def search_cep(self,main_window):
     cursor = conn.cursor()
     
     # Execute the SQL query to retrieve the transport information based on the CEP
-    cursor.execute(f"SELECT * FROM TransportTable WHERE '{cep}' BETWEEN CepInicial AND CepFinal")
+    cursor.execute(f"SELECT * FROM TransportTable WHERE '{cep}' BETWEEN CepInicial AND CepFinal order by Transportador ASC")
     results = cursor.fetchall()
     
     # Close the database connection
