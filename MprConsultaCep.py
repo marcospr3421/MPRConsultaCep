@@ -10,14 +10,34 @@ from testeCep import consultar_cep
 import requests
 import os  # For environment variables
 import json
+from azure.identity import DefaultAzureCredential
+from azure.keyvault.secrets import SecretClient
 
+# Azure Key Vault configuration
+KEY_VAULT_NAME = "mprkv2024az"  # Replace with your key vault name
+KV_URI = f"https://{KEY_VAULT_NAME}.vault.azure.net"
+
+def get_correios_auth_token():
+    try:
+        credential = DefaultAzureCredential()
+        client = SecretClient(vault_url=KV_URI, credential=credential)
+        return client.get_secret("CorreiosAuthToken").value
+    except Exception as e:
+        print(f"Error retrieving secret from Key Vault: {e}")
+        return None
 
 def refresh_correios_token():
     url = "https://api.correios.com.br/token/v1/autentica/contrato"
+    auth_token = get_correios_auth_token()
+    
+    if not auth_token:
+        print("Failed to retrieve authentication token from Key Vault")
+        return None
+        
     headers = {
         'accept': 'application/json',
         'Content-Type': 'application/json',
-        'Authorization': 'Basic YXpjb21lcmNpbzphQ3hIQjZiczQweGVPS1U4QUx6MVNscVdhZDh1OHBBcFJjVHc5Ymx0' #Stored securely as env var.
+        'Authorization': auth_token
     }
     data = {
         "numero": "9912373734",  # Shouldn't change.
