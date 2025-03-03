@@ -1,4 +1,3 @@
-import requests
 import pyodbc
 from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget, QDialog, QMessageBox, QGridLayout
     

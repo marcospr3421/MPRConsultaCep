@@ -8,9 +8,8 @@ from SearchCepFunction import search_cep
 from SearchOrderFunction import search_order
 from testeCep import consultar_cep
 import requests
-import os  # For environment variables (example)
+import os  # For environment variables
 import json
-import pyodbc
 
 
 def refresh_correios_token():
