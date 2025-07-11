@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MPRLabs - Transport Finder - v2.0.1.25</title>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='22994_boat_icon.ico') }}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #333;
+            color: #eee;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #444;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            color: #FE9900;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .section {
+            background-color: #555;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 1px solid #777;
+        }
+
+        .section-title {
+            color: #FE9900;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            background-color: #666;
+            border: 1px solid #888;
+            border-radius: 5px;
+            color: #eee;
+            font-size: 14px;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #FE9900;
+            box-shadow: 0 0 5px rgba(254, 153, 0, 0.5);
+        }
+
+        button {
+            padding: 12px 24px;
+            background-color: #FE9900;
+            color: #333;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #e6890a;
+        }
+
+        button:disabled {
+            background-color: #777;
+            cursor: not-allowed;
+        }
+
+        .results {
+            margin-top: 15px;
+            min-height: 100px;
+        }
+
+        .result-item {
+            background-color: #666;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border-left: 4px solid #FE9900;
+        }
+
+        .result-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .result-field {
+            margin-bottom: 5px;
+        }
+
+        .result-field:last-child {
+            margin-bottom: 0;
+        }
+
+        .result-field strong {
+            color: #FE9900;
+        }
+
+        .error {
+            background-color: #d32f2f;
+            color: white;
+            padding: 12px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        .loading {
+            color: #FE9900;
+            text-align: center;
+            padding: 20px;
+            font-style: italic;
+        }
+
+        .no-results {
+            color: #ccc;
+            text-align: center;
+            padding: 20px;
+            font-style: italic;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .input-group {
+                flex-direction: column;
+            }
+            
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>MPRLabs - Transport Finder</h1>
+            <p>Web Application v2.0.1.25</p>
+        </div>
+
+        <!-- Order Search Section -->
+        <div class="section">
+            <h2 class="section-title">Procurar dados do Pedido</h2>
+            <div class="input-group">
+                <input type="text" id="orderInput" placeholder="Digite o número do pedido" maxlength="20">
+                <button onclick="searchOrder()">Procurar Pedido</button>
+            </div>
+            <div id="orderResults" class="results"></div>
+        </div>
+
+        <!-- Correios CEP Search Section -->
+        <div class="section">
+            <h2 class="section-title">Procurar CEP Correios API</h2>
+            <div class="input-group">
+                <input type="text" id="correiosInput" placeholder="Digite o CEP (apenas números)" maxlength="8" pattern="[0-9]*">
+                <button onclick="searchCorreios()">Procurar Correios</button>
+            </div>
+            <div id="correiosResults" class="results"></div>
+        </div>
+
+        <!-- Transport CEP Search Section -->
+        <div class="section">
+            <h2 class="section-title">Procurar Transportadora por CEP</h2>
+            <div class="input-group">
+                <input type="text" id="cepInput" placeholder="Digite o CEP (apenas números)" maxlength="8" pattern="[0-9]*">
+                <button onclick="searchCEP()">Procurar CEP</button>
+            </div>
+            <div id="cepResults" class="results"></div>
+        </div>
+    </div>
+
+    <script>
+        // Utility function to validate CEP
+        function validateCEP(cep) {
+            return cep.length === 8 && /^\d+$/.test(cep);
+        }
+
+        // Utility function to show loading
+        function showLoading(elementId) {
+            document.getElementById(elementId).innerHTML = '<div class="loading">Carregando...</div>';
+        }
+
+        // Utility function to show error
+        function showError(elementId, message) {
+            document.getElementById(elementId).innerHTML = `<div class="error">${message}</div>`;
+        }
+
+        // Search Order function
+        async function searchOrder() {
+            const orderInput = document.getElementById('orderInput');
+            const order = orderInput.value.trim();
+            
+            if (!order) {
+                showError('orderResults', 'Campo do pedido não pode estar vazio.');
+                return;
+            }
+
+            showLoading('orderResults');
+
+            try {
+                const response = await fetch('/search_order', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ order: order })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    showError('orderResults', data.error || 'Erro ao buscar pedido.');
+                    return;
+                }
+
+                if (data.results && data.results.length > 0) {
+                    let html = '';
+                    data.results.forEach(result => {
+                        html += `
+                            <div class="result-item">
+                                <div class="result-field"><strong>CEP Destino:</strong> ${result.cep_dest}</div>
+                            </div>
+                        `;
+                    });
+                    document.getElementById('orderResults').innerHTML = html;
+                } else {
+                    document.getElementById('orderResults').innerHTML = '<div class="no-results">Nenhum resultado encontrado.</div>';
+                }
+            } catch (error) {
+                showError('orderResults', 'Erro de conexão. Tente novamente.');
+                console.error('Error:', error);
+            }
+        }
+
+        // Search Correios function
+        async function searchCorreios() {
+            const correiosInput = document.getElementById('correiosInput');
+            const cep = correiosInput.value.trim();
+            
+            if (!cep) {
+                showError('correiosResults', 'Campo CEP não pode estar vazio.');
+                return;
+            }
+
+            if (!validateCEP(cep)) {
+                showError('correiosResults', 'CEP deve ter 8 dígitos.');
+                return;
+            }
+
+            showLoading('correiosResults');
+
+            try {
+                const response = await fetch('/search_correios', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ cep: cep })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    showError('correiosResults', data.error || 'Erro ao buscar CEP.');
+                    return;
+                }
+
+                if (data.results) {
+                    let html = '<div class="result-item">';
+                    for (const [key, value] of Object.entries(data.results)) {
+                        html += `<div class="result-field"><strong>${key}:</strong> ${value}</div>`;
+                    }
+                    html += '</div>';
+                    document.getElementById('correiosResults').innerHTML = html;
+                } else {
+                    document.getElementById('correiosResults').innerHTML = '<div class="no-results">Nenhum resultado encontrado.</div>';
+                }
+            } catch (error) {
+                showError('correiosResults', 'Erro de conexão. Tente novamente.');
+                console.error('Error:', error);
+            }
+        }
+
+        // Search CEP function
+        async function searchCEP() {
+            const cepInput = document.getElementById('cepInput');
+            const cep = cepInput.value.trim();
+            
+            if (!cep) {
+                showError('cepResults', 'Campo CEP não pode estar vazio.');
+                return;
+            }
+
+            if (!validateCEP(cep)) {
+                showError('cepResults', 'CEP deve ter 8 dígitos.');
+                return;
+            }
+
+            showLoading('cepResults');
+
+            try {
+                const response = await fetch('/search_cep', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ cep: cep })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    showError('cepResults', data.error || 'Erro ao buscar CEP.');
+                    return;
+                }
+
+                if (data.results && data.results.length > 0) {
+                    let html = '';
+                    data.results.forEach(result => {
+                        html += `
+                            <div class="result-item">
+                                <div class="result-field"><strong>Cidade:</strong> ${result.cidade}</div>
+                                <div class="result-field"><strong>UF:</strong> ${result.uf}</div>
+                                <div class="result-field"><strong>Transportador:</strong> ${result.transportador}</div>
+                                <div class="result-field"><strong>CEP Inicial:</strong> ${result.cep_inicial}</div>
+                                <div class="result-field"><strong>CEP Final:</strong> ${result.cep_final}</div>
+                            </div>
+                        `;
+                    });
+                    document.getElementById('cepResults').innerHTML = html;
+                } else {
+                    document.getElementById('cepResults').innerHTML = '<div class="no-results">Nenhum resultado encontrado.</div>';
+                }
+            } catch (error) {
+                showError('cepResults', 'Erro de conexão. Tente novamente.');
+                console.error('Error:', error);
+            }
+        }
+
+        // Add Enter key support for inputs
+        document.getElementById('orderInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchOrder();
+            }
+        });
+
+        document.getElementById('correiosInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchCorreios();
+            }
+        });
+
+        document.getElementById('cepInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchCEP();
+            }
+        });
+
+        // Only allow numbers in CEP inputs
+        document.getElementById('correiosInput').addEventListener('input', function(e) {
+            e.target.value = e.target.value.replace(/\D/g, '');
+        });
+
+        document.getElementById('cepInput').addEventListener('input', function(e) {
+            e.target.value = e.target.value.replace(/\D/g, '');
+        });
+    </script>
+</body>
+</html>
