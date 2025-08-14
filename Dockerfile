@@ -1,49 +1,48 @@
-# Use Python 3.11 slim image as base
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm
 
-# Set working directory
-WORKDIR /app
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    DEBIAN_FRONTEND=noninteractive \
+    ACCEPT_EULA=Y
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    # ODBC drivers for SQL Server
+# System dependencies and MS SQL ODBC driver
+RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
+    ca-certificates \
     apt-transport-https \
     gnupg \
-    && curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - \
-    && curl https://packages.microsoft.com/config/debian/11/prod.list > /etc/apt/sources.list.d/mssql-release.list \
+    bash \
+    build-essential \
+    unixodbc-dev \
+    && mkdir -p /etc/apt/keyrings /etc/apt/sources.list.d \
+    && curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /etc/apt/keyrings/microsoft.gpg \
+    && chmod 644 /etc/apt/keyrings/microsoft.gpg \
+    && echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/microsoft.gpg] https://packages.microsoft.com/debian/12/prod bookworm main" > /etc/apt/sources.list.d/mssql-release.list \
     && apt-get update \
-    && ACCEPT_EULA=Y apt-get install -y msodbcsql17 \
-    && apt-get install -y unixodbc-dev \
-    && apt-get clean \
+    && apt-get install -y --no-install-recommends msodbcsql18 \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first to leverage Docker layer caching
-COPY requirements-web.txt .
+WORKDIR /app
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements-web.txt
+# Install Python dependencies (web)
+COPY requirements-web.txt ./
+RUN pip install -r requirements-web.txt
 
-# Copy application files
-COPY app.py .
-COPY start.sh .
-COPY templates/ templates/
-COPY static/ static/
+# Copy application code
+COPY . .
+# Normalize potential Windows line endings for shell scripts
+RUN sed -i 's/\r$//' start.sh
 
-# Make start script executable
-RUN chmod +x start.sh
+# Ensure startup script is executable
+RUN chmod +x start.sh \
+    && useradd -m appuser \
+    && chown -R appuser:appuser /app
 
-# Create non-root user for security
-RUN groupadd -r appuser && useradd -r -g appuser appuser
-RUN chown -R appuser:appuser /app
 USER appuser
 
-# Expose port
 EXPOSE 8080
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8080/health || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 CMD curl -f http://localhost:8080/health || exit 1
 
-# Run the application with Gunicorn
-CMD ["./start.sh"]
+ENTRYPOINT ["./start.sh"]

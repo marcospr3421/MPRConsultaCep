@@ -65,7 +65,7 @@ def get_db_connection():
     """Get database connection"""
     try:
         conn = pyodbc.connect(
-            "Driver={ODBC Driver 17 for SQL Server};"
+            "Driver={ODBC Driver 18 for SQL Server};"
             "Server=tcp:mprsqlserver.database.windows.net,1433;"
             "Database=mprDB02;"
             "Uid=azureuser;"
