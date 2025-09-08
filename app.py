@@ -64,16 +64,24 @@ def refresh_correios_token():
 def get_db_connection():
     """Get database connection"""
     try:
-        conn = pyodbc.connect(
-            "Driver={ODBC Driver 18 for SQL Server};"
-            "Server=tcp:mprsqlserver.database.windows.net,1433;"
-            "Database=mprDB02;"
-            "Uid=azureuser;"
-            "Pwd=GMNh*DfrdzmFkAZD*UfQq9uix;"
-            "Encrypt=yes;"
-            "TrustServerCertificate=no;"
-            "Connection Timeout=30;"
+        # Database connection details
+        db_server = os.environ.get("DB_SERVER", "tcp:mprsqlserver.database.windows.net,1433")
+        db_name = os.environ.get("DB_NAME", "mprDB02")
+        db_user = os.environ.get("DB_USER", "azureuser")
+        db_password = os.environ.get("DB_PASSWORD", "GMNh*DfrdzmFkAZD*UfQq9uix")
+
+        conn_str = (
+            f"Driver={{ODBC Driver 18 for SQL Server}};"
+            f"Server={db_server};"
+            f"Database={db_name};"
+            f"Uid={db_user};"
+            f"Pwd={db_password};"
+            f"Encrypt=yes;"
+            f"TrustServerCertificate=no;"
+            f"Connection Timeout=30;"
         )
+
+        conn = pyodbc.connect(conn_str)
         return conn
     except Exception as e:
         print(f"Database connection error: {e}")
