@@ -14,7 +14,14 @@ KEY_VAULT_NAME = "mprkv2024az"
 KV_URI = f"https://{KEY_VAULT_NAME}.vault.azure.net"
 
 def get_correios_auth_token():
-    """Get the base authentication token from Azure Key Vault"""
+    """Retrieves the base authentication token from Azure Key Vault.
+
+    This function authenticates with Azure using DefaultAzureCredential and
+    fetches the secret named "CorreiosAuthToken" from the specified Key Vault.
+
+    Returns:
+        str: The authentication token if found, otherwise None.
+    """
     try:
         credential = DefaultAzureCredential()
         client = SecretClient(vault_url=KV_URI, credential=credential)
@@ -24,7 +31,15 @@ def get_correios_auth_token():
         return None
 
 def refresh_correios_token():
-    """Refresh the Correios API token"""
+    """Refreshes the Correios API token and stores it as an environment variable.
+
+    This function sends a POST request to the Correios authentication endpoint
+    to get a new API token. If successful, it stores the token in the
+    `CORREIOS_TOKEN` environment variable.
+
+    Returns:
+        str: The new token if the refresh is successful, otherwise None.
+    """
     url = "https://api.correios.com.br/token/v1/autentica/contrato"
     auth_token = get_correios_auth_token()
     
@@ -62,7 +77,14 @@ def refresh_correios_token():
         return None
 
 def get_db_connection():
-    """Get database connection"""
+    """Establishes a connection to the SQL Server database.
+
+    Connection parameters are retrieved from environment variables. If they are
+    not set, it falls back to default values.
+
+    Returns:
+        pyodbc.Connection: A database connection object if successful, otherwise None.
+    """
     try:
         # Database connection details
         db_server = os.environ.get("DB_SERVER", "tcp:mprsqlserver.database.windows.net,1433")
@@ -88,7 +110,17 @@ def get_db_connection():
         return None
 
 def search_cep_db(cep):
-    """Search for transport information by CEP"""
+    """Searches for transportation information in the database by CEP.
+
+    Args:
+        cep (str): The CEP (postal code) to search for. It will be padded with
+                   leading zeros to 8 digits.
+
+    Returns:
+        list[dict] | None: A list of dictionaries, where each dictionary
+        represents a transport provider found for the CEP. Returns None if
+        a database connection error occurs.
+    """
     cep = cep.zfill(8)
     
     conn = get_db_connection()
@@ -122,7 +154,16 @@ def search_cep_db(cep):
         conn.close()
 
 def search_order_db(order):
-    """Search for order information"""
+    """Searches for order information in the database.
+
+    Args:
+        order (str): The order number to search for. It will be padded with
+                     leading zeros to 8 digits.
+
+    Returns:
+        list[dict] | None: A list of dictionaries containing the destination CEP
+        for the order. Returns None if a database connection error occurs.
+    """
     order = order.zfill(8)
     
     conn = get_db_connection()
@@ -148,7 +189,16 @@ def search_order_db(order):
         conn.close()
 
 def consultar_cep_correios(cep, token):
-    """Query CEP information using Correios API"""
+    """Queries CEP information using the Correios API.
+
+    Args:
+        cep (str): The CEP (postal code) to query.
+        token (str): The bearer token for API authorization.
+
+    Returns:
+        dict | None: A dictionary containing the address information for the
+        CEP if found, otherwise None.
+    """
     url = f"https://api.correios.com.br/cep/v2/enderecos/{cep}"
     headers = {
         "Authorization": f"Bearer {token}"
@@ -164,12 +214,22 @@ def consultar_cep_correios(cep, token):
 
 @app.route('/')
 def index():
-    """Main page"""
+    """Renders the main page of the web application.
+
+    Returns:
+        str: The rendered HTML of the index page.
+    """
     return render_template('index.html')
 
 @app.route('/search_cep', methods=['POST'])
 def search_cep():
-    """Handle CEP search for transport companies"""
+    """Handles the AJAX request for searching a CEP in the database.
+
+    Expects a JSON payload with a 'cep' key.
+
+    Returns:
+        Response: A JSON response containing the search results or an error message.
+    """
     try:
         data = request.get_json()
         cep = data.get('cep', '').strip()
@@ -196,7 +256,13 @@ def search_cep():
 
 @app.route('/search_order', methods=['POST'])
 def search_order():
-    """Handle order search"""
+    """Handles the AJAX request for searching an order in the database.
+
+    Expects a JSON payload with an 'order' key.
+
+    Returns:
+        Response: A JSON response containing the search results or an error message.
+    """
     try:
         data = request.get_json()
         order = data.get('order', '').strip()
@@ -220,7 +286,14 @@ def search_order():
 
 @app.route('/search_correios', methods=['POST'])
 def search_correios():
-    """Handle Correios CEP search"""
+    """Handles the AJAX request for searching a CEP using the Correios API.
+
+    Expects a JSON payload with a 'cep' key. It will refresh the API token
+    if necessary.
+
+    Returns:
+        Response: A JSON response containing the address data or an error message.
+    """
     try:
         data = request.get_json()
         cep = data.get('cep', '').strip()
@@ -253,7 +326,11 @@ def search_correios():
 
 @app.route('/health')
 def health_check():
-    """Health check endpoint"""
+    """Provides a health check endpoint for monitoring.
+
+    Returns:
+        Response: A JSON response indicating the application status.
+    """
     return jsonify({'status': 'healthy'}), 200
 
 if __name__ == '__main__':

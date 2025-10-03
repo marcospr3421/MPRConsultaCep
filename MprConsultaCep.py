@@ -18,6 +18,12 @@ KEY_VAULT_NAME = "mprkv2024az"  # Replace with your key vault name
 KV_URI = f"https://{KEY_VAULT_NAME}.vault.azure.net"
 
 def get_correios_auth_token():
+    """
+    Retrieves the base authentication token from Azure Key Vault.
+
+    Returns:
+        str: The authentication token if found, otherwise None.
+    """
     try:
         credential = DefaultAzureCredential()
         client = SecretClient(vault_url=KV_URI, credential=credential)
@@ -27,6 +33,15 @@ def get_correios_auth_token():
         return None
 
 def refresh_correios_token():
+    """
+    Refreshes the Correios API token.
+
+    Fetches a new token from the Correios API and stores it as an
+    environment variable.
+
+    Returns:
+        str: The new token if successful, otherwise None.
+    """
     url = "https://api.correios.com.br/token/v1/autentica/contrato"
     auth_token = get_correios_auth_token()
     
@@ -66,12 +81,16 @@ def refresh_correios_token():
         return None # Explicitly return None to signal failure
 
 
-
-
-
-
 class ResultWindow(QDialog):
+    """A dialog window to display formatted query results."""
     def __init__(self, result_text):
+        """
+        Initializes the ResultWindow.
+
+        Args:
+            result_text (str): The text to be displayed, with items
+                               potentially separated by newlines or commas.
+        """
         super().__init__()
         self.setWindowTitle("Resultado da Consulta")
         layout = QVBoxLayout()
@@ -84,26 +103,22 @@ class ResultWindow(QDialog):
                 for item in items:
                     result_label = QLabel(item.strip())
                     result_label.setStyleSheet("background-color: black; font-family: monospace; font-size: 20px; color: white;")
-                    result_label.setTextFormat(Qt.TextFormat.PlainText)  # Not strictly necessary for QLabel
-                    result_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse) # Make text selectable
+                    result_label.setTextFormat(Qt.TextFormat.PlainText)
+                    result_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
                     layout.addWidget(result_label)
             else:
                 result_label = QLabel(line)
                 result_label.setStyleSheet("background-color: black; font-family: monospace; font-size: 20px; color: white;")
-                result_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse) # Make text selectable
+                result_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
                 layout.addWidget(result_label)
-
-
-        # Removed redundant loop
-           
-            
 
         self.setLayout(layout)
 
 
-
 class MainWindow(QMainWindow):
+    """The main window of the Transport Finder application."""
     def __init__(self):
+        """Initializes the main window and sets up the user interface."""
         super().__init__()
         self.setWindowTitle("MPRLabs - Transport Finder - v2.0.1.25")
         self.setWindowIcon(QIcon("22994_boat_icon.ico"))
@@ -215,16 +230,27 @@ class MainWindow(QMainWindow):
         self.cep_input.setFocus()
 
     def search_cep_func(self):
+        """
+        Handles the click event for the 'Procurar por CEP' button.
 
+        Retrieves the CEP from the input field, validates it's not empty,
+        and calls the external `search_cep` function to perform the search
+        and display results.
+        """
         cep = self.cep_input.text()
         if not cep:  # Check if CEP is empty
             QMessageBox.warning(self, "Error", "CEP field cannot be empty.")
             return
         search_cep(self, self)
 
-
-
     def search_order_func(self):
+        """
+        Handles the click event for the 'Procurar por Pedido' button.
+
+        Retrieves the order number from the input field, validates it's not
+        empty, and calls the external `search_order` function to perform
+        the search and display results.
+        """
         order = self.order_input.text()
 
         if not order:
@@ -232,12 +258,15 @@ class MainWindow(QMainWindow):
             return
         search_order(self, self)
 
-        
-
-
-
-
     def consultar_cep_func(self):
+        """
+        Handles the click event for the 'Procurar Correios' button.
+
+        Retrieves the CEP from the input field, ensures an API token for the
+        Correios service is available (refreshing it if necessary), and
+        calls the `consultar_cep` function. Displays the results or an
+        error message.
+        """
         cep_correios = self.cepCorreios_input.text()
         token = os.environ.get('CORREIOS_TOKEN') #Fetch the token.  Use string key, not list.
         if not token:
@@ -258,23 +287,32 @@ class MainWindow(QMainWindow):
         else:
             self.show_message("CEP Not Found", f"CEP entered: {cep_correios} was not found or is invalid.", "Validate the entered CEP and try again.")
 
-  
-
-    
     def display_result(self, result_text, label):
+        """
+        Displays results in a new ResultWindow.
+
+        Args:
+            result_text (str or dict): The result to display. If it's a
+                                       dictionary, it will be converted to a string.
+            label (QLabel): The label widget where results might have been
+                            previously displayed (not currently used).
+        """
         if result_text:
             # Convert the dictionary to a string for ResultWindow
             string_result = str(result_text)
             self.result_window = ResultWindow(string_result) # Pass string_result 
             self.result_window.exec()
 
+    def show_message(self, title, text, informative_text=None):
+        """
+        Displays a custom-styled message box.
 
-
-            
-            
-            
-    def show_message(self, title, text,     informative_text=None): # Add parameters
-
+        Args:
+            title (str): The title of the message box.
+            text (str): The main message text.
+            informative_text (str, optional): Additional informative text.
+                                              Defaults to None.
+        """
         msg_box = QMessageBox(self)
         msg_box.setWindowTitle(title)    # Use the title argument
         msg_box.setText(text)          # Use the text argument

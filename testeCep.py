@@ -1,15 +1,24 @@
+"""
+Provides a function to query the Correios CEP API and a CLI for testing.
+
+This script contains the `consultar_cep` function, which is used by the main
+PyQt6 application to fetch address data. It can also be run as a standalone
+script to test the API query functionality from the command line.
+"""
 import requests
+import os
 
 def consultar_cep(cep, token):
   """
-  Consulta informações de um CEP usando a API dos Correios.
+  Queries CEP information using the Correios API.
 
   Args:
-    cep: O CEP a ser consultado (string, apenas números).
-    token: O token de acesso da API dos Correios.
+    cep (str): The CEP (postal code) to query, consisting of numbers only.
+    token (str): The access token for the Correios API.
 
   Returns:
-    Um dicionário com as informações do CEP, ou None em caso de erro.
+    dict | None: A dictionary with the CEP information if the query is
+                 successful, otherwise None.
   """
 
   url = f"https://api.correios.com.br/cep/v2/enderecos/{cep}"
@@ -19,19 +28,29 @@ def consultar_cep(cep, token):
 
   try:
     response = requests.get(url, headers=headers)
-    response.raise_for_status()  # Lança uma exceção para códigos de erro HTTP
+    response.raise_for_status()  # Raises an exception for HTTP error codes
     return response.json()
   except requests.exceptions.RequestException as e:
-    print(f"Erro ao consultar CEP: {e}")
+    print(f"Error querying CEP: {e}")
     return None
 
 def main():
   """
-  Função principal que solicita o CEP e o token ao usuário e exibe as informações.
+  Main function to run the script from the command line.
+
+  Prompts the user for a CEP. The API token is retrieved from the
+  `CORREIOS_API_TOKEN` environment variable or prompted if not set.
   """
 
   cep = input("Digite o CEP (apenas números): ")
-  token = "eyJhbGciOiJSUzI1NiJ9.eyJpYXQiOjE3MzYzNjExODIsImlzcyI6InRva2VuLXNlcnZpY2UiLCJleHAiOjE3MzY0NDc1ODIsImp0aSI6IjhmNjVlNjEyLWIwYmEtNGI3Zi1iMWJlLTAxMTVlMDI0N2IyNCIsImFtYmllbnRlIjoiUFJPRFVDQU8iLCJwZmwiOiJQSiIsImlwIjoiNDUuMjI3LjYxLjI0NiwgMTkyLjE2OC4xLjEzMCIsImNhdCI6IlBsMCIsImNvbnRyYXRvIjp7Im51bWVybyI6Ijk5MTIzNzM3MzQiLCJkciI6NzIsImFwaXMiOlt7ImFwaSI6Mjd9LHsiYXBpIjozNH0seyJhcGkiOjM1fSx7ImFwaSI6NDF9LHsiYXBpIjo3Nn0seyJhcGkiOjc4fSx7ImFwaSI6ODd9LHsiYXBpIjo1NjZ9LHsiYXBpIjo1ODZ9LHsiYXBpIjo1ODd9LHsiYXBpIjo2MjF9LHsiYXBpIjo2MjN9XX0sImlkIjoiYXpjb21lcmNpbyIsImNucGoiOiIyMDM4NDg0OTAwMDExMyJ9.l8zENOSVUqIBfPquRPQjBRhPLilnHCDklJtGHxU2e1obHpSsZ9au_AMTdv7sWksdcOE_IaCTmfm0pmjPK01G9atRrf7GBq1Eh1Z2d-YmPkyFnEYbV1zF3pLgACYYmCdFxuvXR0uhCteWIeTz5Wn1-DIVT2CkpgKxGr2uq3QzBnuGUtmQZeXW0wdHZ6ebmRu9GeagG4lm-i3fTvweyBQnWGFCCZj9wlwKNTmfwyv-zApCenWGqVUZDXaPIgqc6CP6lb7oLCuwXSKYrRzKI4qYg9cBYkTCc60oWfJvRR0ci4OB-LNZu-vpdjGGf7cs5hauVUQ0eeJGFwV3kqgGTQeHWw'"
+  token = os.environ.get("CORREIOS_API_TOKEN")
+
+  if not token:
+      token = input("Please enter your Correios API token: ")
+
+  if not token:
+      print("An API token must be provided via CORREIOS_API_TOKEN environment variable or user input.")
+      return
 
   dados_cep = consultar_cep(cep, token)
 

@@ -1,172 +1,151 @@
-# MPRConsultaCep Docker Deployment Guide
+# Web Application Deployment Guide
 
-## ✅ Docker Implementation Complete!
+This guide provides detailed instructions for deploying the Flask web application using Docker and various Azure services.
 
-Your PyQt6 desktop application has been successfully converted to a containerized web application. Here's what we've accomplished:
+## Docker Deployment
 
-### 🎯 Conversion Summary
+1.  **Build and run with Docker Compose**:
+    ```bash
+    # Set up your environment variables, for example in a .env file
+    # AZURE_CLIENT_ID=your-client-id
+    # AZURE_CLIENT_SECRET=your-client-secret
+    # AZURE_TENANT_ID=your-tenant-id
+    # SECRET_KEY=a-strong-secret-key
 
-**From:** PyQt6 Desktop Application → **To:** Flask Web Application + Docker
+    # Build and run
+    docker-compose up -d
+    ```
 
-### 📁 Files Created
+2.  **Or build and run with Docker directly**:
+    ```bash
+    # Build the image
+    docker build -t mpr-consulta-cep .
 
-1. **`app.py`** - Flask web server with REST API endpoints
-2. **`templates/index.html`** - Modern web interface with same functionality
-3. **`static/22994_boat_icon.ico`** - Application icon for web
-4. **`Dockerfile`** - Container definition with production setup
-5. **`docker-compose.yml`** - Multi-container deployment configuration
-6. **`requirements-web.txt`** - Web application dependencies
-7. **`start.sh`** - Production startup script with Gunicorn
-8. **`.dockerignore`** - Optimized Docker build context
-9. **`.env.template`** - Environment configuration template
-10. **`deploy.bat`** - Windows deployment script
-11. **`README.md`** - Comprehensive documentation
+    # Run the container
+    docker run -d \
+      --name mpr-consulta-cep-web \
+      -p 8080:8080 \
+      -e AZURE_CLIENT_ID=your-client-id \
+      -e AZURE_CLIENT_SECRET=your-client-secret \
+      -e AZURE_TENANT_ID=your-tenant-id \
+      -e SECRET_KEY=your-secret-key \
+      mpr-consulta-cep
+    ```
 
-### 🚀 Quick Start
+## Azure Container Instance Deployment
 
-#### Option 1: Docker Compose (Recommended)
-```bash
-# 1. Configure environment
-cp .env.template .env
-# Edit .env with your Azure credentials
+1.  **Create Azure Container Instance**:
 
-# 2. Deploy with one command
-docker compose up -d
+    ```bash
+    az container create \
+      --resource-group your-resource-group \
+      --name mpr-consulta-cep \
+      --image your-dockerhub-username/mpr-consulta-cep:latest \
+      --dns-name-label mpr-consulta-cep \
+      --ports 8080 \
+      --environment-variables \
+        AZURE_CLIENT_ID=your-client-id \
+        AZURE_TENANT_ID=your-tenant-id \
+        SECRET_KEY=your-secret-key \
+      --secure-environment-variables \
+        AZURE_CLIENT_SECRET=your-client-secret
+    ```
 
-# 3. Access application
-# http://localhost:8080
-```
+## Azure App Service Deployment
 
-#### Option 2: Manual Docker
-```bash
-# Build image
-docker build -t mpr-consulta-cep .
+1.  **Using Azure CLI**:
+    ```bash
+    # Create App Service Plan
+    az appservice plan create \
+      --name mpr-consulta-cep-plan \
+      --resource-group your-resource-group \
+      --sku B1 \
+      --is-linux
 
-# Run container
-docker run -d --name mpr-cep -p 8080:8080 \
-  -e AZURE_CLIENT_ID=your-client-id \
-  -e AZURE_CLIENT_SECRET=your-client-secret \
-  -e AZURE_TENANT_ID=your-tenant-id \
-  -e SECRET_KEY=your-secret-key \
-  mpr-consulta-cep
-```
+    # Create Web App
+    az webapp create \
+      --resource-group your-resource-group \
+      --plan mpr-consulta-cep-plan \
+      --name mpr-consulta-cep-app \
+      --deployment-container-image-name your-dockerhub-username/mpr-consulta-cep:latest
 
-#### Option 3: Windows Batch Script
-```cmd
-# Run the deployment script
-deploy.bat
-```
+    # Configure environment variables
+    az webapp config appsettings set \
+      --resource-group your-resource-group \
+      --name mpr-consulta-cep-app \
+      --settings \
+        AZURE_CLIENT_ID=your-client-id \
+        AZURE_CLIENT_SECRET=your-client-secret \
+        AZURE_TENANT_ID=your-tenant-id \
+        SECRET_KEY=your-secret-key \
+        WEBSITES_PORT=8080
+    ```
 
-### 🔧 Current Status
+## Configuration
 
-✅ **Flask Web Application** - Running on port 8080  
-✅ **Docker Image** - Built successfully with all dependencies  
-✅ **Docker Compose** - Multi-container setup working  
-✅ **Production Ready** - Gunicorn WSGI server with 4 workers  
-✅ **Health Checks** - Built-in monitoring and restart capabilities  
-✅ **Security** - Non-root user, environment variables for secrets  
-✅ **Azure Integration** - Key Vault and SQL Server connectivity  
-
-### 🌐 Web Interface Features
-
-- **Order Search** - Find order information by order number
-- **Correios CEP Search** - Official Brazilian postal API integration
-- **Transport CEP Search** - Internal database transport lookup
-- **Modern UI** - Responsive design with loading states and error handling
-- **API Endpoints** - RESTful JSON API for all functionality
-
-### 📊 Architecture
-
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Web Browser   │───▶│  Docker         │───▶│  Azure Services │
-│   Port 8080     │    │  Flask + Python │    │  Key Vault +    │
-│                 │    │  Gunicorn       │    │  SQL Server     │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-```
-
-### 🔐 Security Features
-
-- **Azure Key Vault** integration for secret management
-- **Environment variables** for configuration
-- **Non-root container** execution
-- **HTTPS ready** (add reverse proxy for SSL)
-- **Health monitoring** with automatic restarts
-
-### 📈 Production Deployment Options
-
-1. **Azure Container Instances (ACI)**
-   - Simple cloud deployment
-   - Managed identity support
-   - Pay-per-use pricing
-
-2. **Azure App Service**
-   - Platform-as-a-Service
-   - Built-in scaling and monitoring
-   - Easy CI/CD integration
-
-3. **Azure Kubernetes Service (AKS)**
-   - Enterprise container orchestration
-   - Advanced scaling and management
-   - Multi-environment support
-
-4. **Self-Hosted Docker**
-   - On-premises deployment
-   - Full control over infrastructure
-   - Cost-effective for stable workloads
-
-### 🛠️ Management Commands
-
-```bash
-# View logs
-docker compose logs -f
-
-# Stop application
-docker compose down
-
-# Rebuild and restart
-docker compose up -d --build
-
-# Check container health
-docker ps
-docker inspect <container-id>
-
-# Enter container for debugging
-docker exec -it mpr-consulta-cep-web /bin/bash
-```
-
-### 📋 Environment Variables
-
-Required for production deployment:
+### Environment Variables
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `AZURE_CLIENT_ID` | Azure service principal ID | Yes* |
-| `AZURE_CLIENT_SECRET` | Azure service principal secret | Yes* |
+| `AZURE_CLIENT_ID` | Azure service principal client ID | Yes* |
+| `AZURE_CLIENT_SECRET` | Azure service principal client secret | Yes* |
 | `AZURE_TENANT_ID` | Azure tenant ID | Yes* |
-| `SECRET_KEY` | Flask session encryption key | Yes |
-| `WORKERS` | Number of Gunicorn workers | No (default: 4) |
-| `PORT` | Application port | No (default: 8080) |
+| `AZURE_USE_MSI` | Use managed identity instead of service principal | No |
+| `SECRET_KEY` | Flask secret key for sessions | Yes |
+| `FLASK_ENV` | Flask environment (development/production) | No |
+| `WORKERS` | Number of Gunicorn workers | No |
+| `PORT` | Application port | No |
+| `HOST` | Application host | No |
 
-*Not required when using Azure Managed Identity
+*Not required when using managed identity (`AZURE_USE_MSI=true`)
 
-### 🎉 Success Metrics
+### Azure Key Vault Setup
 
-- ✅ Desktop app successfully converted to web app
-- ✅ All original functionality preserved
-- ✅ Modern, responsive web interface
-- ✅ Production-ready Docker container
-- ✅ Scalable architecture with load balancer support
-- ✅ Secure configuration with Azure integration
-- ✅ Comprehensive documentation and deployment guides
+1. Create a Key Vault in Azure
+2. Store your Correios authentication token as a secret named `CorreiosAuthToken`
+3. Grant your service principal or managed identity access to the Key Vault
 
-### 🔄 Next Steps
+## Security Considerations
 
-1. **Configure Azure credentials** in `.env` file
-2. **Deploy to cloud** using your preferred Azure service
-3. **Set up CI/CD pipeline** for automated deployments
-4. **Configure monitoring** and logging solutions
-5. **Set up SSL certificate** for HTTPS access
-6. **Scale horizontally** by adding more container instances
+- All sensitive configuration is stored in environment variables.
+- Azure Key Vault is used for secret management.
+- Database connections use encrypted connections.
+- The application runs as a non-root user in the container.
+- For production, consider configuring CORS and other security headers.
 
-Your application is now ready for production deployment! 🚀
+## Monitoring and Logging
+
+- A health check endpoint is available at `/health`.
+- Application logs are output to stdout/stderr.
+- The container includes health checks for orchestration.
+- Consider adding application monitoring (e.g., Application Insights).
+
+## Troubleshooting
+
+### Common Issues
+
+1.  **Database Connection Failed**:
+    - Check network connectivity to Azure SQL Server.
+    - Verify credentials and firewall rules.
+    - Ensure the ODBC driver is installed in the container.
+
+2.  **Azure Key Vault Access Denied**:
+    - Verify service principal credentials.
+    - Check Key Vault access policies.
+    - For managed identity, ensure it's enabled and has permissions.
+
+3.  **Correios API Token Issues**:
+    - Check if the token in Key Vault is valid.
+    - Verify the token refresh logic is working.
+    - Check for API rate limits.
+
+### Logs
+
+View application logs:
+```bash
+# Docker Compose
+docker-compose logs -f mpr-consulta-cep
+
+# Docker
+docker logs -f mpr-consulta-cep-web
+```

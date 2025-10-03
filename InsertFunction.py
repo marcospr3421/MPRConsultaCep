@@ -1,6 +1,20 @@
+"""
+Generates SQL INSERT statements from an Excel file.
+
+This script reads carrier data from an Excel file named 'Transportadoras.xlsx'.
+It iterates through each row of the Excel file, constructs a SQL INSERT
+statement for the `TransportTable`, and prints each statement to the console.
+
+The expected columns in the Excel file are:
+- cepInicial
+- cepFinal
+- Cidade
+- UF
+- Transportador
+"""
 import pandas as pd
 
-# Read the CSV file into a DataFrame
+# Read the Excel file into a DataFrame
 df = pd.read_excel('Transportadoras.xlsx')
 
 
