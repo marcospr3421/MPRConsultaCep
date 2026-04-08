@@ -115,15 +115,38 @@ def process_file(file_path, carrier_name):
         print(f"[-] Erro ao processar {carrier_name}: {e}")
         return None
 
+# Dicionário de Aliases para padronização final no Banco de Dados
+# Isso garante que mesmo que o arquivo tenha outro nome, no site apareça o nome preferido do usuário.
+ALIASES = {
+    'RTE': 'RODONAVES',
+    'GOLLOG': 'GOL LOG',
+    'EXCARGO': 'EXCARGO',
+    'TERMACO': 'TERMACO'
+}
+
+# Grupos de limpeza: quando importar uma transportadora desse grupo, apaga todas as variações
+CLEANUP_GROUPS = {
+    'RODONAVES': ['RODONAVES', 'RTE'],
+    'GOL LOG': ['GOL LOG', 'GOLLOG']
+}
+
 def sync_to_sql(df_total):
     conn = get_db_connection()
     if conn is None: return
     
     cursor = conn.cursor()
     try:
+        # Padroniza os nomes no DataFrame antes de qualquer operação
+        df_total['Transportador'] = df_total['Transportador'].map(lambda x: ALIASES.get(x, x))
+        
         for carrier in df_total['Transportador'].unique():
-            print(f"[LIMPANDO] Dados antigos de {carrier}...")
-            cursor.execute("DELETE FROM TransportTable WHERE Transportador = ?", carrier)
+            # EXPLICANDO: Se a transportadora estiver em um grupo de limpeza, apaga todas as variações.
+            # Se não, apaga apenas ela mesma.
+            to_delete = CLEANUP_GROUPS.get(carrier, [carrier])
+            
+            for name in to_delete:
+                print(f"[LIMPANDO] Removendo dados de {name}...")
+                cursor.execute("DELETE FROM TransportTable WHERE Transportador = ?", name)
         
         print(f"[ENVIANDO] {len(df_total)} linhas para o SQL Server...")
         insert_query = "INSERT INTO TransportTable (CepInicial, CepFinal, Cidade, UF, Transportador) VALUES (?, ?, ?, ?, ?)"

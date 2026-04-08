@@ -58,7 +58,7 @@ def search_order_db_logic(order):
     """
     try:
         order = order.strip()
-        if len(order) < 8:
+        if len(order) > 0 and len(order) < 8:
             order = order.zfill(8)
 
         db_password = os.environ.get("DB_PASSWORD")

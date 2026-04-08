@@ -168,7 +168,10 @@ def search_order_db(order):
         list[dict] | None: A list of dictionaries containing the destination CEP
         for the order. Returns None if a database connection error occurs.
     """
-    order = order.zfill(8)
+    # EXPLICANDO: Se for um pedido curto (ex: 123), preenchemos com zeros (00000123).
+    # Se já for longo (como Mercado Livre), mantemos como está.
+    if len(order) > 0 and len(order) < 8:
+        order = order.zfill(8)
     
     conn = get_db_connection()
     if not conn:
