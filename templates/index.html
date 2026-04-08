@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MPRLabs | Freight Insight</title>
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='22994_boat_icon.ico') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #FE9900;
+            --primary-hover: #e68a00;
+            --bg: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --border: rgba(255, 255, 255, 0.1);
+            --success: #10b981;
+            --error: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(254, 153, 0, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(30, 41, 59, 0.4) 0px, transparent 50%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            z-index: 1;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 50px;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+
+        .logo-area img {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            box-shadow: 0 0 20px rgba(254, 153, 0, 0.3);
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            background: linear-gradient(to right, #fff, var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        header p {
+            color: var(--text-dim);
+            font-size: 1.1rem;
+        }
+
+        .search-container {
+            position: relative;
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 8px;
+            display: flex;
+            gap: 10px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+            margin-bottom: 30px;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .search-container:focus-within {
+            transform: translateY(-2px);
+            border-color: rgba(254, 153, 0, 0.5);
+        }
+
+        .search-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 15px 25px;
+            color: white;
+            font-size: 1.2rem;
+            outline: none;
+        }
+
+        .search-input::placeholder {
+            color: var(--text-dim);
+        }
+
+        .btn-search {
+            background: var(--primary);
+            color: #000;
+            border: none;
+            border-radius: 14px;
+            padding: 0 30px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-search:hover {
+            background: var(--primary-hover);
+            transform: scale(1.02);
+        }
+
+        .btn-search:active {
+            transform: scale(0.98);
+        }
+
+        /* Results Area */
+        #results-area {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            width: 100%;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 25px;
+            animation: slideUp 0.5s ease-out;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 15px;
+        }
+
+        .tag {
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .tag-order { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+        .tag-cep { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .info-item label {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .info-item div {
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .validation-alert {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+        }
+
+        .alert-success { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .alert-error { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+
+        .carrier-list {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .carrier-item {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .carrier-item:hover {
+            border-color: var(--primary);
+            background: rgba(254, 153, 0, 0.05);
+        }
+
+        .carrier-name {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(254, 153, 0, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s linear infinite;
+            margin: 40px auto;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px;
+            color: var(--text-dim);
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        footer {
+            margin-top: auto;
+            padding: 40px;
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            header h1 { font-size: 1.8rem; }
+            .search-container { flex-direction: column; padding: 10px; }
+            .btn-search { width: 100%; padding: 15px; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div class="logo-area">
+                <img src="{{ url_for('static', filename='mprLabs4sml.jpg') }}" alt="Logo">
+                <h1>Freight Insight</h1>
+            </div>
+            <p>Inteligência Logística & Consulta de Disponibilidade</p>
+        </header>
+
+        <div class="search-container">
+            <input type="text" id="searchInput" class="search-input" placeholder="Digite o Pedido ou CEP..." autofocus>
+            <button onclick="performSearch()" class="btn-search">Buscar Agora</button>
+        </div>
+
+        <div id="results-area">
+            <div class="empty-state">
+                <p>Aguardando sua consulta... Digite um número de pedido ou CEP de 8 dígitos.</p>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2024 MPRLabs - Sistema de Inteligência em Fretes v3.0</p>
+    </footer>
+
+    <script>
+        document.getElementById('searchInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') performSearch();
+        });
+
+        async function performSearch() {
+            const query = document.getElementById('searchInput').value.trim();
+            const resultsArea = document.getElementById('results-area');
+
+            if (!query) return;
+
+            resultsArea.innerHTML = '<div class="spinner"></div>';
+
+            try {
+                const response = await fetch('/api/unified_search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: query })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    resultsArea.innerHTML = `<div class="card" style="border-color: var(--error)">
+                        <h3 style="color: var(--error)">Opa! Algo deu errado.</h3>
+                        <p style="margin-top: 10px">${data.error || 'Erro desconhecido'}</p>
+                    </div>`;
+                    return;
+                }
+
+                if (data.type === 'order') {
+                    renderOrder(data, resultsArea);
+                } else {
+                    renderCEP(data, resultsArea);
+                }
+
+            } catch (error) {
+                resultsArea.innerHTML = `<div class="card" style="border-color: var(--error)">
+                    <h3 style="color: var(--error)">Erro de Conexão</h3>
+                    <p>Verifique sua internet e tente novamente.</p>
+                </div>`;
+            }
+        }
+
+        function renderOrder(data, container) {
+            const o = data.order;
+            const valid = data.validation;
+            
+            container.innerHTML = `
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Pedido #${document.getElementById('searchInput').value}</h2>
+                        <span class="tag tag-order">DADOS DO PEDIDO</span>
+                    </div>
+                    
+                    <div class="info-grid">
+                        <div class="info-item"><label>Data Venda</label><div>${o.data_venda}</div></div>
+                        <div class="info-item"><label>Produto</label><div>${o.produto}</div></div>
+                        <div class="info-item"><label>Valor</label><div>R$ ${o.valor}</div></div>
+                        <div class="info-item"><label>CEP Destino</label><div>${o.cep_dest}</div></div>
+                        <div class="info-item"><label>Cidade/UF</label><div>${o.municipio} - ${o.estado}</div></div>
+                        <div class="info-item"><label>Canal</label><div>${o.canal}</div></div>
+                    </div>
+
+                    <div class="validation-alert ${valid.is_valid_carrier ? 'alert-success' : 'alert-error'}">
+                        <span>${valid.is_valid_carrier ? '✓' : '⚠'}</span>
+                        <div>
+                            <div>${o.transportadora} (${o.servico})</div>
+                            <div style="font-size: 0.8rem; opacity: 0.9">${valid.message}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderCEP(data, container) {
+            const addr = data.address || {};
+            let carriersHtml = '';
+            
+            if (data.carriers && data.carriers.length > 0) {
+                data.carriers.forEach(c => {
+                    carriersHtml += `
+                        <div class="carrier-item">
+                            <div>
+                                <div class="carrier-name">${c.transportador}</div>
+                                <div style="font-size: 0.8rem; color: var(--text-dim)">Atende: ${c.cidade} - ${c.uf}</div>
+                            </div>
+                            <div style="font-size: 0.8rem; text-align: right">
+                                Faixa: ${c.cep_inicial} - ${c.cep_final}
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                carriersHtml = '<p class="empty-state">Nenhuma transportadora cadastrada atende este CEP.</p>';
+            }
+
+            container.innerHTML = `
+                <div class="card" style="margin-bottom: 20px">
+                    <div class="card-header">
+                        <h2>Localização do CEP</h2>
+                        <span class="tag tag-cep">ENDEREÇO</span>
+                    </div>
+                    <div class="info-grid">
+                        <div class="info-item"><label>Logradouro</label><div>${addr.logradouro || 'N/A'}</div></div>
+                        <div class="info-item"><label>Bairro</label><div>${addr.bairro || 'N/A'}</div></div>
+                        <div class="info-item"><label>Cidade/UF</label><div>${addr.localidade || 'N/A'} - ${addr.uf || 'N/A'}</div></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Transportadoras Atendentes</h2>
+                    </div>
+                    <div class="carrier-list">
+                        ${carriersHtml}
+                    </div>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
