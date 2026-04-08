@@ -9,10 +9,10 @@ load_dotenv()
 
 # Dicionários de sinônimos para detecção automática de colunas
 KEYWORDS = {
-    'cep_init': ['CEP INICIAL', 'CEP INICIO', 'INICIO FAIXA', 'CEP INCIO', 'CEP START', 'CEP_INICIAL', 'CEP - INICIAL', 'CEP INÍCIO', 'INICIO', 'CEP_INICIO', 'CEP INIC', 'INIC'],
-    'cep_final': ['CEP FINAL', 'FIM FAIXA', 'CEP END', 'CEP_FINAL', 'CEP - FINAL', 'FIM', 'CEP_FIM', 'FINAL'],
-    'cidade': ['CIDADE', 'MUNICIPIO', 'DESTINO', 'LOCALIDADE', 'CIDADE DESTINO', 'CIDADE DE ATENDIMENTO', 'NOME CIDADE'],
-    'uf': ['UF', 'ESTADO', 'EST', 'FEDERACAO', 'REGIAO'],
+    'cep_init': ['CEP INICIAL', 'CEP INICIO', 'INICIO FAIXA', 'CEP INCIO', 'CEP START', 'CEP_INICIAL', 'CEP - INICIAL', 'CEP INÍCIO', 'INICIO', 'CEP_INICIO', 'CEP INIC', 'INIC', 'INICIOFAIXACEPDESTINO'],
+    'cep_final': ['CEP FINAL', 'FIM FAIXA', 'CEP END', 'CEP_FINAL', 'CEP - FINAL', 'FIM', 'CEP_FIM', 'FINAL', 'FINALFAIXACEPDESTINO'],
+    'cidade': ['CIDADE', 'MUNICIPIO', 'DESTINO', 'LOCALIDADE', 'CIDADE DESTINO', 'CIDADE DE ATENDIMENTO', 'NOME CIDADE', 'MUNICIPIODESTINO'],
+    'uf': ['UF', 'ESTADO', 'EST', 'FEDERACAO', 'REGIAO', 'UFDESTINO'],
 }
 
 def clean_cep(cep):
@@ -172,7 +172,8 @@ if __name__ == "__main__":
         'TERMACO': r'TERMACO',
         'GOLLOG': r'GOLLOG',
         'EXCARGO': r'\(Exc\)',
-        'RTE': r'RTE'
+        'RTE': r'RTE',
+        'CORREIOS': r'CORREIOS'
     }
     
     for filename in os.listdir(folder_path):

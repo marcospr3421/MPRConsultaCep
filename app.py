@@ -190,6 +190,14 @@ def search_order_db(order):
         cursor.execute(query, order)
         results = cursor.fetchall()
         
+        # EXPLICANDO: Fallback para busca parcial (LIKE) caso a busca exata falhe.
+        # Útil para lidar com números muito longos ou formatos variados (Mercado Livre).
+        if not results:
+            print(f"DEBUG: Busca exata falhou para {order}. Tentando LIKE...")
+            like_query = query.replace("NumeroDoPedido = ?", "NumeroDoPedido LIKE ?")
+            cursor.execute(like_query, f"%{order}%")
+            results = cursor.fetchall()
+        
         order_data = []
         for result in results:
             order_data.append({
