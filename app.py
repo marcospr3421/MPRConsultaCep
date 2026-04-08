@@ -248,7 +248,8 @@ def validate_carrier_coverage(cep, carrier_name):
     if not carrier_name:
         return False
         
-    cep = cep.zfill(8)
+    cep = str(cep).replace('-', '').replace(' ', '').zfill(8)
+
     conn = get_db_connection()
     if not conn:
         return False

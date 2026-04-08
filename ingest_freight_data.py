@@ -121,13 +121,15 @@ ALIASES = {
     'RTE': 'RODONAVES',
     'GOLLOG': 'GOL LOG',
     'EXCARGO': 'EXCARGO',
-    'TERMACO': 'TERMACO'
+    'TERMACO': 'TERMACO',
+    'CORREIOS': 'CORREIOS'
 }
 
 # Grupos de limpeza: quando importar uma transportadora desse grupo, apaga todas as variações
 CLEANUP_GROUPS = {
     'RODONAVES': ['RODONAVES', 'RTE'],
-    'GOL LOG': ['GOL LOG', 'GOLLOG']
+    'GOL LOG': ['GOL LOG', 'GOLLOG'],
+    'CORREIOS': ['CORREIOS']
 }
 
 def sync_to_sql(df_total):
