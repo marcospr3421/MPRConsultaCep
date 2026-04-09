@@ -1,107 +1,98 @@
-# MPR-CEP Consultation Tools
+# API Fretes AZ - Inteligência Logística 🚀
 
-This repository contains a suite of tools for consulting Brazilian postal codes (CEP), transportation providers, and order information. The project includes a Flask web application, a PyQt6 desktop application, and several utility scripts.
+Um sistema web inteligente projetado para ajudar os colaboradores da AZ Acessórios a escolherem a transportadora ideal de maneira rápida, visual e livre de erros.
 
-## Project Overview
+O sistema faz o diagnóstico completo do frete com base:
+1. Em um **CEP** (busca simples para viabilidade).
+2. Em um **Número de Pedido** (busca inteligente com *Raio-X* logístico).
 
-The main components of this project are:
--   **Flask Web Application**: A web-based interface for all search functionalities. It is containerized with Docker for easy deployment.
--   **PyQt6 Desktop Application**: A native desktop GUI for users who prefer a standalone application.
--   **Utility Scripts**: Tools for populating the database and testing API connectivity.
+---
 
-## Repository Structure
+## 🌟 Funcionalidades Principais (V6.4)
 
+- **Integração com ERP / SQL:** Busca dados validados do cliente, valor do pedido, canal de venda e detalhes completos.
+- **Painel de Itens:** Exibe na tela todos os SKUs do pedido informando suas dimensões e preços.
+- **Cubagem Inteligente Padrão Indústria:** Calcula internamente se o **Peso Físico** ou **Peso Cubado (Volumétrico)** é o maior e aplica a regra tarifária correta de envio.
+- **Alerta de Categoria Crítica (`BIG`):** Alerta imediatamente o colaborador e bloqueia envio por Correios caso o produto se enquadre em regras extragrandes.
+- **Resiliência de Dados (API vs DB):**
+   - Na descoberta do CEP, prioriza consultar o serviço da API do ViaCEP/Correios para dados fresquinhos (Bairro/Cidade atualizada).
+   - Se a API cair, o sistema assume os dados originais contidos no seu Banco de Dados como redundância (Failover).
+- **Interface Premium e Glassmorphism:** Cores que respondem contextualmente (Bloqueado/Recomendado) focadas 100% em legibilidade.
+
+---
+
+## ⚙️ Arquitetura e Engenharia Backend
+
+O núcleo funcional é feito em `Python` sob a engrenagem web do `Flask`. Conecta via ODBC para o Azure SQL Database.
+
+### Camada de Regras Dinâmicas
+As regras de trava de Frete não estão hard-coded. Tudo é guiado por um arquivo JSON simples listado em `config/carrier_rules.json`.
+
+Exemplo de configuração dinâmica:
+```json
+{
+  "CORREIOS": {
+    "max_weight_kg": 30,
+    "max_length_cm": 100,
+    "forbidden_categories": ["BIG", "GIGANTE"]
+  }
+}
 ```
-.
-├── app.py                      # Core Flask web application
-├── MprConsultaCep.py           # Core PyQt6 desktop application
-├── SearchCepFunction.py        # Backend logic for CEP search (used by desktop app)
-├── SearchOrderFunction.py      # Backend logic for order search (used by desktop app)
-├── InsertFunction.py           # Utility to generate SQL INSERT statements from an Excel file
-├── testeCep.py                 # CLI tool to test Correios CEP API
-├── teste_app.py                # Unit tests for the Flask application
-├── requirements.txt            # Dependencies for the desktop application and scripts
-├── requirements-web.txt        # Dependencies for the Flask web application
-├── Dockerfile                  # Docker configuration for the web app
-├── DOCKER_DEPLOYMENT_GUIDE.md  # Detailed instructions for deploying the web app
-└── README.md                   # This file
-```
+*Isto permite a qualquer admin expandir regras logísticas para novas transportadoras futuramente, editando um simples pedaço de texto.*
 
 ---
 
-## Components
+## 🛠️ Stack Tecnológica
 
-### 1. Flask Web Application
-
-The web application (`app.py`) provides a browser-based interface for all search functions.
-
-**Setup and Running Locally:**
-
-1.  **Install dependencies**:
-    ```bash
-    pip install -r requirements-web.txt
-    ```
-
-2.  **Configure environment**:
-    You will need to set up environment variables for Azure Key Vault access to allow the application to fetch the Correios API token. The required variables are `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, and `AZURE_TENANT_ID`.
-
-3.  **Run the application**:
-    ```bash
-    python app.py
-    ```
-    The application will be available at `http://localhost:8080`.
-
-**Deployment:**
-
-For detailed instructions on how to deploy the web application using Docker, Azure Container Instances, or Azure App Service, please see [DOCKER_DEPLOYMENT_GUIDE.md](./DOCKER_DEPLOYMENT_GUIDE.md).
-
-### 2. PyQt6 Desktop Application
-
-The desktop application (`MprConsultaCep.py`) provides a native GUI for Windows, macOS, or Linux.
-
-**Setup and Running:**
-
-1.  **Install dependencies**:
-    ```bash
-    pip install -r requirements.txt
-    ```
-2.  **Run the application**:
-    ```bash
-    python MprConsultaCep.py
-    ```
-
-### 3. Utility Scripts
-
--   **`InsertFunction.py`**:
-    This script reads carrier data from `Transportadoras.xlsx` and generates SQL `INSERT` statements to populate the `TransportTable` in the database. To use it, simply run:
-    ```bash
-    python InsertFunction.py
-    ```
-
--   **`testeCep.py`**:
-    This is a command-line tool to quickly test the Correios CEP API. It will prompt you to enter a CEP and will print the results.
-    ```bash
-    python testeCep.py
-    ```
+| Componente | Tecnologia |
+|---|---|
+| **Backend** | Python 3 + Flask |
+| **Banco de Dados** | Microsoft Azure SQL |
+| **Driver de Conexão** | `pyodbc` (ODBC Driver 18 for SQL Server) |
+| **Frontend** | HTML5, CSS3, ES6 Javascript |
+| **Hospedagem / CI/CD** | Railway App + GitHub |
 
 ---
 
-## Testing
+## 🚀 Como Rodar Localmente (Desenvolvimento)
 
-The repository includes a unit test file for the Flask application.
+1. **Clone o repositório:**
+   ```bash
+   git clone https://github.com/marcospr3421/MPRConsultaCep.git
+   cd MPRConsultaCep
+   ```
 
--   **`teste_app.py`**: Contains unit tests for the database connection logic in `app.py`. To run the tests:
-    ```bash
-    python -m unittest teste_app.py
-    ```
+2. **Crie e ative um ambiente virtual:**
+   ```bash
+   python -m venv venv
+   # No Windows:
+   venv\Scripts\activate
+   # No Linux/Mac:
+   source venv/bin/activate
+   ```
+
+3. **Instale as dependências:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Configure as Variáveis de Ambiente:**
+   Crie um arquivo `.env` na raiz do projeto com as credenciais do seu banco:
+   ```env
+   DB_SERVER=nome_do_servidor.database.windows.net
+   DB_NAME=seu_banco
+   DB_USER=seu_usuario
+   DB_PASSWORD=sua_senha
+   ```
+
+5. **Execute a aplicação:**
+   ```bash
+   python app.py
+   ```
+   Acesse no navegador: `http://localhost:5000`
 
 ---
 
-## Database
-
-The applications connect to a SQL Server database with the following key tables:
-
--   `TransportTable`: Stores CEP ranges and their corresponding transportation providers.
--   `PedidosDisponiveis`: Stores order numbers and their destination CEPs.
-
-The connection string is configured within the application files and can be modified to point to a different database instance.
+## 👨‍💻 Feito por:
+**Marcos Ribeiro | MPR Labs**  
+Desenvolvido com o apoio de IA mentoria técnica Avançada (V6.4 Master Plus Edition).
