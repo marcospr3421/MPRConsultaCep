@@ -602,15 +602,17 @@ def unified_search():
             carriers = search_cep_db(query)
             
             # EXPLICANDO: Se a API dos Correios achou o endereço, injetamos os CORREIOS 
-            # de forma virtual. Preenchemos os campos com os dados da API para não ficar 'undefined'.
+            # de forma virtual. Verificamos primeiro se já não existe na base local.
             if address:
-                carriers.insert(0, {
-                    'transportador': 'CORREIOS',
-                    'cidade': address.get('localidade', 'N/A'),
-                    'uf': address.get('uf', 'N/A'),
-                    'cep_inicial': query,
-                    'cep_final': query
-                })
+                has_correios = any('CORREIOS' in c['transportador'].upper() for c in carriers)
+                if not has_correios:
+                    carriers.insert(0, {
+                        'transportador': 'CORREIOS',
+                        'cidade': address.get('localidade', 'N/A'),
+                        'uf': address.get('uf', 'N/A'),
+                        'cep_inicial': query,
+                        'cep_final': query
+                    })
             
             return jsonify({
                 'type': 'cep',
@@ -632,15 +634,17 @@ def unified_search():
             # 2. Busca transportadoras (SQL)
             raw_carriers = search_cep_db(target_cep)
             
-            # 3. Injeta Correios Virtual
+            # 3. Injeta Correios Virtual (se endereco existir e correios nao estiver no DB)
             if address:
-                raw_carriers.insert(0, {
-                    'transportador': 'CORREIOS',
-                    'cidade': address.get('localidade', 'N/A'),
-                    'uf': address.get('uf', 'N/A'),
-                    'cep_inicial': target_cep,
-                    'cep_final': target_cep
-                })
+                has_correios = any('CORREIOS' in c['transportador'].upper() for c in raw_carriers)
+                if not has_correios:
+                    raw_carriers.insert(0, {
+                        'transportador': 'CORREIOS',
+                        'cidade': address.get('localidade', 'N/A'),
+                        'uf': address.get('uf', 'N/A'),
+                        'cep_inicial': target_cep,
+                        'cep_final': target_cep
+                    })
             
             # 4. APLICA REGRAS INTELIGENTES (Upgrade V2)
             smart_carriers = apply_carrier_rules(raw_carriers, order_info)
