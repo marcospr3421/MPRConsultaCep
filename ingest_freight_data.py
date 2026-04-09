@@ -11,7 +11,7 @@ load_dotenv()
 KEYWORDS = {
     'cep_init': ['CEP INICIAL', 'CEP INICIO', 'INICIO FAIXA', 'CEP INCIO', 'CEP START', 'CEP_INICIAL', 'CEP - INICIAL', 'CEP INÍCIO', 'INICIO', 'CEP_INICIO', 'CEP INIC', 'INIC', 'INICIOFAIXACEPDESTINO'],
     'cep_final': ['CEP FINAL', 'FIM FAIXA', 'CEP END', 'CEP_FINAL', 'CEP - FINAL', 'FIM', 'CEP_FIM', 'FINAL', 'FINALFAIXACEPDESTINO'],
-    'cidade': ['CIDADE', 'MUNICIPIO', 'DESTINO', 'LOCALIDADE', 'CIDADE DESTINO', 'CIDADE DE ATENDIMENTO', 'NOME CIDADE', 'MUNICIPIODESTINO'],
+    'cidade': ['CIDADE', 'MUNICIPIO', 'DESTINO', 'LOCALIDADE', 'CIDADE DESTINO', 'CIDADE DE ATENDIMENTO', 'NOME CIDADE', 'MUNICIPIODESTINO', 'DESCRIÇÃO DO DESTINO'],
     'uf': ['UF', 'ESTADO', 'EST', 'FEDERACAO', 'REGIAO', 'UFDESTINO'],
 }
 
@@ -31,8 +31,8 @@ def get_db_connection():
     missing = [v for v in vars_to_check if not os.environ.get(v)]
     
     if missing:
-        print(f"⚠️ Erro: Variáveis de ambiente faltando: {', '.join(missing)}")
-        print("Certifique-se de que o arquivo .env existe e contém essas chaves.")
+        print(f"Erro: Variaveis de ambiente faltando: {', '.join(missing)}")
+        print("Certifique-se de que o arquivo .env existe e contem essas chaves.")
         return None
 
     try:
@@ -49,7 +49,7 @@ def get_db_connection():
         )
         return pyodbc.connect(conn_str, autocommit=True)
     except Exception as e:
-        print(f"❌ Erro ao conectar no banco: {e}")
+        print(f"[-] Erro ao conectar no banco: {e}")
         return None
 
 def detect_mapping(df_preview):
