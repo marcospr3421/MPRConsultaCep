@@ -387,7 +387,10 @@
                     </div>
                     <div class="info-grid">
                         <div class="info-item"><label>Local de Destino</label><div>${addr.localidade || 'N/A'} - ${addr.uf || 'N/A'} (CEP: ${info.cep})</div></div>
-                        <div class="info-item"><label>Peso Máx. Item</label><div>${info.max_weight} kg</div></div>
+                        <div class="info-item"><label>Peso Real Total</label><div>${info.total_weight} kg</div></div>
+                        <div class="info-item"><label>Peso Cubado</label><div>${info.peso_cubado} kg</div></div>
+                        <div class="info-item"><label>Peso de Cobrança</label><div><strong>${info.peso_cobranca} kg</strong> <span style="font-size:0.7rem;color:var(--text-dim)">(usado para validação)</span></div></div>
+                        <div class="info-item"><label>Maior Dimensão</label><div>${info.max_length} cm</div></div>
                         <div class="info-item"><label>Categoria Especial</label><div>${info.is_big ? '<span style="color: #f87171">⚠ POSSUI ITEM BIG</span>' : 'Padrão'}</div></div>
                     </div>
                 </div>

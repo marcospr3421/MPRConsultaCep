@@ -133,10 +133,11 @@ def get_order_details(order_number):
         
         target_cep = str(res_cep[0]).replace('-', '').strip().zfill(8)
         
-        # 2. Busca Itens e suas Medidas
+        # 2. Busca Itens, Quantidades e Medidas Fisicas
         query = """
             SELECT 
                 i.CodigoProduto,
+                i.Quantidade,
                 p.Peso, p.Altura, p.Largura, p.Comprimento,
                 c.Categorias
             FROM PedidosDisponiveis h
@@ -148,34 +149,59 @@ def get_order_details(order_number):
         cursor.execute(query, (order_number,))
         items = cursor.fetchall()
         
-        results = {
-            'cep': target_cep,
-            'max_weight': 0,
-            'max_length': 0,
-            'max_sum_dims': 0,
-            'is_big': False,
-            'items': []
-        }
-        
+        # EXPLICANDO: Agora somamos peso e volume de TODOS os itens,
+        # multiplicando pela quantidade. Isso evita o bug de 2 itens de 20kg
+        # serem tratados como se fossem apenas 20kg no total.
+        total_weight_real = 0.0  # Peso fisico somado de todos os itens
+        total_volume_cm3 = 0.0   # Volume total em cm3 (para calcular peso cubado)
+        max_length = 0.0         # Maior dimensao individual (para restricao de tamanho)
+        is_big = False
+        item_list = []
+
         for item in items:
-            peso = float(item[1] or 0)
-            altura = float(item[2] or 0)
-            largura = float(item[3] or 0)
-            comp = float(item[4] or 0)
-            cats = str(item[5] or "").upper()
-            
-            results['max_weight'] = max(results['max_weight'], peso)
-            results['max_length'] = max(results['max_length'], comp, altura, largura)
-            results['max_sum_dims'] = max(results['max_sum_dims'], (peso + altura + comp)) # Simplificado
-            
+            sku      = item[0]
+            qtd      = float(item[1] or 1)
+            peso     = float(item[2] or 0)
+            altura   = float(item[3] or 0)
+            largura  = float(item[4] or 0)
+            comp     = float(item[5] or 0)
+            cats     = str(item[6] or "").upper()
+
+            # Acumula peso real: cada item * quantidade
+            total_weight_real += peso * qtd
+
+            # Acumula volume: C x L x A x quantidade
+            total_volume_cm3 += comp * largura * altura * qtd
+
+            # A maior dimensao individual ainda importa (restricao de comprimento)
+            max_length = max(max_length, comp, altura, largura)
+
             if "BIG" in cats or "GIGANTE" in cats:
-                results['is_big'] = True
-                
-            results['items'].append({
-                'sku': item[0],
+                is_big = True
+
+            item_list.append({
+                'sku': sku,
+                'qty': qtd,
                 'weight': peso,
+                'length': comp,
                 'category': cats
             })
+
+        # EXPLICANDO: Peso Cubado = volume total / 6000
+        # Regra dos Correios e da maioria das transportadoras:
+        # o frete e cobrado pelo MAIOR entre peso real e peso cubado.
+        peso_cubado = round(total_volume_cm3 / 6000, 2)
+        peso_cobranca = max(total_weight_real, peso_cubado)
+
+        results = {
+            'cep': target_cep,
+            'total_weight': round(total_weight_real, 2),
+            'peso_cubado': peso_cubado,
+            'peso_cobranca': peso_cobranca,  # O que a transportadora vai usar
+            'max_length': round(max_length, 2),
+            'is_big': is_big,
+            'items': item_list
+        }
             
         return results
     except Exception as e:
@@ -203,20 +229,25 @@ def apply_carrier_rules(carriers, order_info):
             reason = ''
             
             if rule:
+                limite_peso = rule.get('max_weight_kg', 9999)
+                limite_dim  = rule.get('max_length_cm', 9999)
+
                 # Validacao de Categoria BIG
                 if order_info['is_big'] and rule.get('forbidden_categories'):
                     status = 'Bloqueado'
                     reason = 'Possui item de categoria "BIG"'
-                
-                # Validacao de Peso
-                elif order_info['max_weight'] > rule.get('max_weight_kg', 9999):
+
+                # Validacao de Peso de Cobranca (real vs cubado, o maior)
+                elif order_info['peso_cobranca'] > limite_peso:
                     status = 'Bloqueado'
-                    reason = f"Peso ({order_info['max_weight']}kg) excede o limite"
-                    
-                # Validacao de Dimensao
-                elif order_info['max_length'] > rule.get('max_length_cm', 9999):
+                    reason = (f"Peso de cobranca ({order_info['peso_cobranca']}kg) "
+                              f"excede o limite de {limite_peso}kg")
+
+                # Validacao de Dimensao maxima individual
+                elif order_info['max_length'] > limite_dim:
                     status = 'Bloqueado'
-                    reason = "Dimensoes excedem o limite"
+                    reason = (f"Dimensao ({order_info['max_length']}cm) "
+                              f"excede o limite de {limite_dim}cm")
             
             c['status'] = status
             c['reason'] = reason
