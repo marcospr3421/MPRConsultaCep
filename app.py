@@ -132,6 +132,7 @@ def search_cep_db(cep):
         return None
     
     try:
+        cursor = conn.cursor()
         cursor.execute(
             "SELECT DISTINCT Transportador FROM TransportTable WHERE ? BETWEEN CepInicial AND CepFinal ORDER BY Transportador ASC",
             cep
