@@ -132,18 +132,27 @@ def search_cep_db(cep):
         return None
     
     try:
-        cursor = conn.cursor()
-        cursor.execute(
-            "SELECT DISTINCT Transportador FROM TransportTable WHERE ? BETWEEN CepInicial AND CepFinal ORDER BY Transportador ASC",
-            cep
-        )
+        # EXPLICANDO: Usamos GROUP BY para garantir que cada transportadora apareça apenas uma vez
+        # na lista, mas pegamos um exemplo de faixa (MIN/MAX) para mostrar na UI.
+        query = """
+            SELECT Transportador, MIN(CepInicial), MAX(CepFinal), MAX(Cidade), MAX(UF)
+            FROM TransportTable 
+            WHERE ? BETWEEN CepInicial AND CepFinal 
+            GROUP BY Transportador
+            ORDER BY Transportador ASC
+        """
+        cursor.execute(query, cep)
         results = cursor.fetchall()
         
         # Convert results to list of dictionaries
         transport_data = []
         for result in results:
             transport_data.append({
-                'transportador': result[0]
+                'transportador': result[0],
+                'cep_inicial': result[1],
+                'cep_final': result[2],
+                'cidade': result[3],
+                'uf': result[4]
             })
         
         return transport_data
@@ -409,9 +418,15 @@ def unified_search():
             carriers = search_cep_db(query)
             
             # EXPLICANDO: Se a API dos Correios achou o endereço, injetamos os CORREIOS 
-            # na lista de transportadoras sem precisar do SQL, mantendo a base leve.
+            # de forma virtual. Preenchemos os campos com os dados da API para não ficar 'undefined'.
             if address:
-                carriers.insert(0, {'transportador': 'CORREIOS'})
+                carriers.insert(0, {
+                    'transportador': 'CORREIOS',
+                    'cidade': address.get('localidade', 'N/A'),
+                    'uf': address.get('uf', 'N/A'),
+                    'cep_inicial': query,
+                    'cep_final': query
+                })
             
             return jsonify({
                 'type': 'cep',
