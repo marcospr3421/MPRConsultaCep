@@ -187,12 +187,17 @@ if __name__ == "__main__":
                 break
         
         if identified_carrier:
+            # EXPLICANDO: Ignoramos os Correios aqui pois agora usamos a API oficial 
+            # para validar a entrega deles, mantendo o banco leve.
+            if identified_carrier == 'CORREIOS':
+                print(f"[*] Ignorando planilha de Correios (Validacao via API ativa).")
+                continue
+                
             df = process_file(file_path, identified_carrier)
             if df is not None and not df.empty:
                 all_data.append(df)
         else:
-            if 'CORREIOS' not in filename.upper():
-                print(f"[*] Arquivo ignorado: {filename}")
+            print(f"[*] Arquivo ignorado: {filename}")
             
     if all_data:
         final_df = pd.concat(all_data, ignore_index=True)

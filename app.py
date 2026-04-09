@@ -132,9 +132,8 @@ def search_cep_db(cep):
         return None
     
     try:
-        cursor = conn.cursor()
         cursor.execute(
-            "SELECT * FROM TransportTable WHERE ? BETWEEN CepInicial AND CepFinal ORDER BY Transportador ASC",
+            "SELECT DISTINCT Transportador FROM TransportTable WHERE ? BETWEEN CepInicial AND CepFinal ORDER BY Transportador ASC",
             cep
         )
         results = cursor.fetchall()
@@ -143,11 +142,7 @@ def search_cep_db(cep):
         transport_data = []
         for result in results:
             transport_data.append({
-                'cep_inicial': result[1],
-                'cep_final': result[2],
-                'cidade': result[3],
-                'uf': result[4],
-                'transportador': result[5]
+                'transportador': result[0]
             })
         
         return transport_data
@@ -409,8 +404,13 @@ def unified_search():
             token = os.environ.get('CORREIOS_TOKEN') or refresh_correios_token()
             address = consultar_cep_correios(query, token)
             
-            # Search carriers
+            # Search carriers (Internal SQL)
             carriers = search_cep_db(query)
+            
+            # EXPLICANDO: Se a API dos Correios achou o endereço, injetamos os CORREIOS 
+            # na lista de transportadoras sem precisar do SQL, mantendo a base leve.
+            if address:
+                carriers.insert(0, {'transportador': 'CORREIOS'})
             
             return jsonify({
                 'type': 'cep',
