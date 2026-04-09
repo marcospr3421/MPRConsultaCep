@@ -113,6 +113,120 @@ def get_db_connection():
         print(f"Database connection error: {e}")
         return None
 
+def get_order_details(order_number):
+    """
+    EXPLICANDO: Esta função faz o 'Raio-X' do pedido.
+    Busca o CEP do cliente, os itens comprados e as medidas físicas de cada um.
+    """
+    conn = get_db_connection()
+    if not conn:
+        return None
+        
+    try:
+        cursor = conn.cursor()
+        
+        # 1. Busca o CEP no Pedido
+        cursor.execute("SELECT TOP 1 DestCep FROM PedidosDisponiveis WHERE NumeroDoPedido = ?", (order_number,))
+        res_cep = cursor.fetchone()
+        if not res_cep:
+            return None
+        
+        target_cep = str(res_cep[0]).replace('-', '').strip().zfill(8)
+        
+        # 2. Busca Itens e suas Medidas
+        query = """
+            SELECT 
+                i.CodigoProduto,
+                p.Peso, p.Altura, p.Largura, p.Comprimento,
+                c.Categorias
+            FROM PedidosDisponiveis h
+            JOIN PedidosDisponiveisItens i ON h.CodigoPedidoAbacos = i.CodigoPedidoAbacos
+            LEFT JOIN ProdutosDisponiveisResult p ON i.CodigoProduto = p.CodigoProduto
+            LEFT JOIN vw_ProdutosComCategorias c ON i.CodigoProduto = c.CodigoProduto
+            WHERE h.NumeroDoPedido = ?
+        """
+        cursor.execute(query, (order_number,))
+        items = cursor.fetchall()
+        
+        results = {
+            'cep': target_cep,
+            'max_weight': 0,
+            'max_length': 0,
+            'max_sum_dims': 0,
+            'is_big': False,
+            'items': []
+        }
+        
+        for item in items:
+            peso = float(item[1] or 0)
+            altura = float(item[2] or 0)
+            largura = float(item[3] or 0)
+            comp = float(item[4] or 0)
+            cats = str(item[5] or "").upper()
+            
+            results['max_weight'] = max(results['max_weight'], peso)
+            results['max_length'] = max(results['max_length'], comp, altura, largura)
+            results['max_sum_dims'] = max(results['max_sum_dims'], (peso + altura + comp)) # Simplificado
+            
+            if "BIG" in cats or "GIGANTE" in cats:
+                results['is_big'] = True
+                
+            results['items'].append({
+                'sku': item[0],
+                'weight': peso,
+                'category': cats
+            })
+            
+        return results
+    except Exception as e:
+        print(f"Error fetching order details: {e}")
+        return None
+    finally:
+        conn.close()
+
+def apply_carrier_rules(carriers, order_info):
+    """
+    EXPLICANDO: Aplica as regras do arquivo rules.json para filtrar transportadoras.
+    Se um item for 'BIG', os Correios e Gol Log são marcados como 'Nao Recomendado'.
+    """
+    try:
+        rules_path = os.path.join(app.root_path, 'config', 'carrier_rules.json')
+        with open(rules_path, 'r', encoding='utf-8') as f:
+            rules = json.load(f)
+            
+        enriched_carriers = []
+        for c in carriers:
+            c_name = c['transportador'].upper()
+            rule = rules.get(c_name)
+            
+            status = 'Recomendado'
+            reason = ''
+            
+            if rule:
+                # Validacao de Categoria BIG
+                if order_info['is_big'] and rule.get('forbidden_categories'):
+                    status = 'Bloqueado'
+                    reason = 'Possui item de categoria "BIG"'
+                
+                # Validacao de Peso
+                elif order_info['max_weight'] > rule.get('max_weight_kg', 9999):
+                    status = 'Bloqueado'
+                    reason = f"Peso ({order_info['max_weight']}kg) excede o limite"
+                    
+                # Validacao de Dimensao
+                elif order_info['max_length'] > rule.get('max_length_cm', 9999):
+                    status = 'Bloqueado'
+                    reason = "Dimensoes excedem o limite"
+            
+            c['status'] = status
+            c['reason'] = reason
+            enriched_carriers.append(c)
+            
+        return enriched_carriers
+    except Exception as e:
+        print(f"Error applying rules: {e}")
+        return carriers
+
 def search_cep_db(cep):
     """Searches for transportation information in the database by CEP.
 
@@ -445,22 +559,49 @@ def unified_search():
             })
             
         # 2. Treat as Order
+        order_info = get_order_details(query)
+        
+        if order_info:
+            # Pegamos o CEP que foi descoberto no pedido
+            target_cep = order_info['cep']
+            
+            # 1. Busca endereço
+            token = os.environ.get('CORREIOS_TOKEN') or refresh_correios_token()
+            address = consultar_cep_correios(target_cep, token)
+            
+            # 2. Busca transportadoras (SQL)
+            raw_carriers = search_cep_db(target_cep)
+            
+            # 3. Injeta Correios Virtual
+            if address:
+                raw_carriers.insert(0, {
+                    'transportador': 'CORREIOS',
+                    'cidade': address.get('localidade', 'N/A'),
+                    'uf': address.get('uf', 'N/A'),
+                    'cep_inicial': target_cep,
+                    'cep_final': target_cep
+                })
+            
+            # 4. APLICA REGRAS INTELIGENTES (Upgrade V2)
+            smart_carriers = apply_carrier_rules(raw_carriers, order_info)
+            
+            return jsonify({
+                'type': 'smart_order',
+                'order_info': order_info,
+                'address': address,
+                'carriers': smart_carriers
+            })
+
+        # 3. Fallback: Busca pedido simples na tabela de fretes (caso não esteja na tabela de pedidos ainda)
         order_data = search_order_db(query)
         if not order_data:
-            # Maybe it's a shorter CEP or invalid order?
-            return jsonify({'error': 'Nenhum pedido ou CEP válido encontrado'}), 404
+            return jsonify({'error': 'Nenhum pedido, CEP ou dados de produto encontrados'}), 404
             
         order = order_data[0]
-        # Cross-validation
-        is_valid = validate_carrier_coverage(order['cep_dest'], order['transportadora'])
-        
         return jsonify({
             'type': 'order',
             'order': order,
-            'validation': {
-                'is_valid_carrier': is_valid,
-                'message': "Transportadora Válida" if is_valid else "⚠️ Transportadora não atende esta região!"
-            }
+            'message': 'Pedido encontrado, mas sem metadados de produto disponíveis.'
         })
         
     except Exception as e:

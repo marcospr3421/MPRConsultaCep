@@ -1,0 +1,33 @@
+{
+    "CORREIOS": {
+        "max_weight_kg": 30,
+        "max_length_cm": 100,
+        "max_sum_dims_cm": 200,
+        "extra_fee_threshold_cm": 70,
+        "forbidden_categories": ["BIG", "GIGANTE", "PESADO", "EXTRAGRANDE"]
+    },
+    "GOL LOG": {
+        "max_weight_kg": 50,
+        "max_length_cm": 120,
+        "max_sum_dims_cm": 250,
+        "forbidden_categories": ["BIG", "GIGANTE"]
+    },
+    "RODONAVES": {
+        "max_weight_kg": 500,
+        "max_length_cm": 300,
+        "max_sum_dims_cm": 800,
+        "forbidden_categories": []
+    },
+    "TERMACO": {
+        "max_weight_kg": 500,
+        "max_length_cm": 300,
+        "max_sum_dims_cm": 800,
+        "forbidden_categories": []
+    },
+    "EXCARGO": {
+        "max_weight_kg": 1000,
+        "max_length_cm": 500,
+        "max_sum_dims_cm": 1000,
+        "forbidden_categories": []
+    }
+}

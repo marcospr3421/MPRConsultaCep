@@ -173,6 +173,8 @@
 
         .tag-order { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
         .tag-cep { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+        .tag-recommended { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+        .tag-blocked { background: rgba(239, 68, 68, 0.2); color: #f87171; }
 
         .info-grid {
             display: grid;
@@ -342,7 +344,9 @@
                     return;
                 }
 
-                if (data.type === 'order') {
+                if (data.type === 'smart_order') {
+                    renderSmartOrder(data, resultsArea);
+                } else if (data.type === 'order') {
                     renderOrder(data, resultsArea);
                 } else {
                     renderCEP(data, resultsArea);
@@ -354,6 +358,49 @@
                     <p>Verifique sua internet e tente novamente.</p>
                 </div>`;
             }
+        }
+
+        function renderSmartOrder(data, container) {
+            const info = data.order_info;
+            const addr = data.address || {};
+            let carriersHtml = '';
+            
+            data.carriers.forEach(c => {
+                const isBlocked = c.status === 'Bloqueado';
+                carriersHtml += `
+                    <div class="carrier-item ${isBlocked ? 'blocked-item' : ''}" style="display: flex; justify-content: space-between; align-items: center; opacity: ${isBlocked ? '0.6' : '1'}">
+                        <div>
+                            <div class="carrier-name">${c.transportador}</div>
+                            <div style="font-size: 0.8rem; color: var(--text-dim)">Atende: ${c.cidade} - ${c.uf}</div>
+                            ${isBlocked ? `<div style="font-size: 0.75rem; color: #f87171; margin-top: 4px">⚠ ${c.reason}</div>` : ''}
+                        </div>
+                        <span class="tag ${isBlocked ? 'tag-blocked' : 'tag-recommended'}">${c.status}</span>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = `
+                <div class="card" style="margin-bottom: 20px; border-left: 4px solid #60a5fa">
+                    <div class="card-header">
+                        <h2>Análise do Pedido #${document.getElementById('searchInput').value}</h2>
+                        <span class="tag tag-order">BUSCA INTELIGENTE</span>
+                    </div>
+                    <div class="info-grid">
+                        <div class="info-item"><label>Local de Destino</label><div>${addr.localidade || 'N/A'} - ${addr.uf || 'N/A'} (CEP: ${info.cep})</div></div>
+                        <div class="info-item"><label>Peso Máx. Item</label><div>${info.max_weight} kg</div></div>
+                        <div class="info-item"><label>Categoria Especial</label><div>${info.is_big ? '<span style="color: #f87171">⚠ POSSUI ITEM BIG</span>' : 'Padrão'}</div></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Melhores Opções de Transporte</h2>
+                    </div>
+                    <div class="carrier-list">
+                        ${carriersHtml}
+                    </div>
+                </div>
+            `;
         }
 
         function renderOrder(data, container) {
