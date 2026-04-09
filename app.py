@@ -409,8 +409,12 @@ def unified_search():
         if not query:
             return jsonify({'error': 'Campo de busca vazio'}), 400
             
+        # EXPLICANDO: Removemos hífens e espaços para aceitar formatos como '01001-001'
+        clean_query = query.replace('-', '').replace(' ', '')
+        
         # 1. Detect if it's a CEP (8 digits)
-        if len(query) == 8 and query.isdigit():
+        if len(clean_query) == 8 and clean_query.isdigit():
+            query = clean_query # Usa a versão limpa para as consultas
             # Search address (Correios)
             token = os.environ.get('CORREIOS_TOKEN') or refresh_correios_token()
             address = consultar_cep_correios(query, token)
