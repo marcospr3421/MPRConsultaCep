@@ -601,18 +601,18 @@ def unified_search():
             # Search carriers (Internal SQL)
             carriers = search_cep_db(query)
             
-            # EXPLICANDO: Se a API dos Correios achou o endereço, injetamos os CORREIOS 
-            # de forma virtual. Verificamos primeiro se já não existe na base local.
+            # EXPLICANDO: Tentar API primeiro. Se ela obteve sucesso, a gente remove
+            # qualquer 'CORREIOS' antigo que tenha vindo do Banco de Dados e usamos a API.
+            # Se a API falhar (address = None), ele vai manter o registro do Banco como redundância!
             if address:
-                has_correios = any('CORREIOS' in c['transportador'].upper() for c in carriers)
-                if not has_correios:
-                    carriers.insert(0, {
-                        'transportador': 'CORREIOS',
-                        'cidade': address.get('localidade', 'N/A'),
-                        'uf': address.get('uf', 'N/A'),
-                        'cep_inicial': query,
-                        'cep_final': query
-                    })
+                carriers = [c for c in carriers if 'CORREIOS' not in c['transportador'].upper()]
+                carriers.insert(0, {
+                    'transportador': 'CORREIOS',
+                    'cidade': address.get('localidade', 'N/A'),
+                    'uf': address.get('uf', 'N/A'),
+                    'cep_inicial': query,
+                    'cep_final': query
+                })
             
             return jsonify({
                 'type': 'cep',
@@ -634,17 +634,16 @@ def unified_search():
             # 2. Busca transportadoras (SQL)
             raw_carriers = search_cep_db(target_cep)
             
-            # 3. Injeta Correios Virtual (se endereco existir e correios nao estiver no DB)
+            # 3. Injeta Correios Virtual (API com prioridade sobre o DB)
             if address:
-                has_correios = any('CORREIOS' in c['transportador'].upper() for c in raw_carriers)
-                if not has_correios:
-                    raw_carriers.insert(0, {
-                        'transportador': 'CORREIOS',
-                        'cidade': address.get('localidade', 'N/A'),
-                        'uf': address.get('uf', 'N/A'),
-                        'cep_inicial': target_cep,
-                        'cep_final': target_cep
-                    })
+                raw_carriers = [c for c in raw_carriers if 'CORREIOS' not in c['transportador'].upper()]
+                raw_carriers.insert(0, {
+                    'transportador': 'CORREIOS',
+                    'cidade': address.get('localidade', 'N/A'),
+                    'uf': address.get('uf', 'N/A'),
+                    'cep_inicial': target_cep,
+                    'cep_final': target_cep
+                })
             
             # 4. APLICA REGRAS INTELIGENTES (Upgrade V2)
             smart_carriers = apply_carrier_rules(raw_carriers, order_info)
