@@ -136,7 +136,12 @@ def search_cep_db(cep):
         # EXPLICANDO: Usamos GROUP BY para garantir que cada transportadora apareça apenas uma vez
         # na lista, mas pegamos um exemplo de faixa (MIN/MAX) para mostrar na UI.
         query = """
-            SELECT Transportador, MIN(CepInicial), MAX(CepFinal), MAX(Cidade), MAX(UF)
+            SELECT 
+                Transportador, 
+                MIN(CepInicial) as CepInicial, 
+                MAX(CepFinal) as CepFinal, 
+                MAX(CASE WHEN Cidade <> 'N/A' THEN Cidade ELSE NULL END) as Cidade, 
+                MAX(UF) as UF
             FROM TransportTable 
             WHERE ? BETWEEN CepInicial AND CepFinal 
             GROUP BY Transportador

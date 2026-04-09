@@ -11,7 +11,7 @@ load_dotenv()
 KEYWORDS = {
     'cep_init': ['CEP INICIAL', 'CEP INICIO', 'INICIO FAIXA', 'CEP INCIO', 'CEP START', 'CEP_INICIAL', 'CEP - INICIAL', 'CEP INÍCIO', 'INICIO', 'CEP_INICIO', 'CEP INIC', 'INIC', 'INICIOFAIXACEPDESTINO'],
     'cep_final': ['CEP FINAL', 'FIM FAIXA', 'CEP END', 'CEP_FINAL', 'CEP - FINAL', 'FIM', 'CEP_FIM', 'FINAL', 'FINALFAIXACEPDESTINO'],
-    'cidade': ['CIDADE', 'MUNICIPIO', 'DESTINO', 'LOCALIDADE', 'CIDADE DESTINO', 'CIDADE DE ATENDIMENTO', 'NOME CIDADE', 'MUNICIPIODESTINO', 'DESCRIÇÃO DO DESTINO'],
+    'cidade': ['CIDADE', 'MUNICIPIO', 'DESTINO', 'LOCALIDADE', 'CIDADE DESTINO', 'CIDADE DE ATENDIMENTO', 'NOME CIDADE', 'MUNICIPIODESTINO', 'DESCRIÇÃO DO DESTINO', 'MUNICIPIO/DISTRITO'],
     'uf': ['UF', 'ESTADO', 'EST', 'FEDERACAO', 'REGIAO', 'UFDESTINO'],
 }
 
@@ -56,7 +56,8 @@ def detect_mapping(df_preview):
     """Tenta encontrar em qual linha estão os cabeçalhos e qual o índice das colunas."""
     # Percorre as primeiras 50 linhas
     for i in range(min(50, len(df_preview))):
-        row = [str(val).upper() for val in df_preview.iloc[i].values]
+        # EXPLICANDO: Removemos espaços extras (strip) para evitar erros com 'CIDADE ' vs 'CIDADE'
+        row = [str(val).strip().upper() for val in df_preview.iloc[i].values]
         mapping = {}
         
         for key, synonyms in KEYWORDS.items():
