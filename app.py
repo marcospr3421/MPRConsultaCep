@@ -132,6 +132,7 @@ def search_cep_db(cep):
         return None
     
     try:
+        cursor = conn.cursor()
         # EXPLICANDO: Usamos GROUP BY para garantir que cada transportadora apareça apenas uma vez
         # na lista, mas pegamos um exemplo de faixa (MIN/MAX) para mostrar na UI.
         query = """
