@@ -237,6 +237,38 @@
             color: var(--primary);
         }
 
+        /* Tabela de Itens do Pedido */
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 0.85rem;
+        }
+        .items-table th {
+            text-align: left;
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-dim);
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+        .items-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            vertical-align: middle;
+        }
+        .items-table tr:last-child td { border-bottom: none; }
+        .items-table tr:hover td { background: rgba(255,255,255,0.03); }
+        .badge-big {
+            background: rgba(239,68,68,0.2);
+            color: #f87171;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
         /* Loading Spinner */
         .spinner {
             width: 40px;
@@ -363,45 +395,91 @@
         function renderSmartOrder(data, container) {
             const info = data.order_info;
             const addr = data.address || {};
+
+            // --- Bloco de Transportadoras ---
             let carriersHtml = '';
-            
             data.carriers.forEach(c => {
                 const isBlocked = c.status === 'Bloqueado';
                 carriersHtml += `
-                    <div class="carrier-item ${isBlocked ? 'blocked-item' : ''}" style="display: flex; justify-content: space-between; align-items: center; opacity: ${isBlocked ? '0.6' : '1'}">
+                    <div class="carrier-item" style="opacity:${isBlocked ? '0.6' : '1'}">
                         <div>
                             <div class="carrier-name">${c.transportador}</div>
-                            <div style="font-size: 0.8rem; color: var(--text-dim)">Atende: ${c.cidade} - ${c.uf}</div>
-                            ${isBlocked ? `<div style="font-size: 0.75rem; color: #f87171; margin-top: 4px">⚠ ${c.reason}</div>` : ''}
+                            <div style="font-size:0.8rem;color:var(--text-dim)">Atende: ${c.cidade} - ${c.uf}</div>
+                            ${isBlocked ? `<div style="font-size:0.75rem;color:#f87171;margin-top:4px">&#9888; ${c.reason}</div>` : ''}
                         </div>
                         <span class="tag ${isBlocked ? 'tag-blocked' : 'tag-recommended'}">${c.status}</span>
-                    </div>
-                `;
+                    </div>`;
+            });
+
+            // --- Tabela de Itens ---
+            let itemsHtml = '';
+            (info.items || []).forEach(item => {
+                const isBig = item.classe && item.classe.includes('BIG');
+                itemsHtml += `
+                    <tr>
+                        <td><strong>${item.sku}</strong></td>
+                        <td>${item.nome} ${isBig ? '<span class="badge-big">BIG</span>' : ''}</td>
+                        <td style="text-align:center">${item.qty}x</td>
+                        <td>R$ ${item.preco.toFixed(2)}</td>
+                        <td style="color:var(--text-dim)">${item.comp}x${item.largura}x${item.altura} cm</td>
+                        <td style="color:var(--text-dim)">${item.weight} kg</td>
+                    </tr>`;
             });
 
             container.innerHTML = `
-                <div class="card" style="margin-bottom: 20px; border-left: 4px solid #60a5fa">
+                <!-- PAINEL 1: Dados do Cliente e Pedido -->
+                <div class="card" style="margin-bottom:16px;border-left:4px solid #818cf8">
                     <div class="card-header">
-                        <h2>Análise do Pedido #${document.getElementById('searchInput').value}</h2>
-                        <span class="tag tag-order">BUSCA INTELIGENTE</span>
+                        <h2>Pedido #${info.numero || document.getElementById('searchInput').value}</h2>
+                        <span class="tag tag-order">DADOS DO CLIENTE</span>
                     </div>
                     <div class="info-grid">
-                        <div class="info-item"><label>Local de Destino</label><div>${addr.localidade || 'N/A'} - ${addr.uf || 'N/A'} (CEP: ${info.cep})</div></div>
-                        <div class="info-item"><label>Peso Real Total</label><div>${info.total_weight} kg</div></div>
-                        <div class="info-item"><label>Peso Cubado</label><div>${info.peso_cubado} kg</div></div>
-                        <div class="info-item"><label>Peso de Cobrança</label><div><strong>${info.peso_cobranca} kg</strong> <span style="font-size:0.7rem;color:var(--text-dim)">(usado para validação)</span></div></div>
-                        <div class="info-item"><label>Maior Dimensão</label><div>${info.max_length} cm</div></div>
-                        <div class="info-item"><label>Categoria Especial</label><div>${info.is_big ? '<span style="color: #f87171">⚠ POSSUI ITEM BIG</span>' : 'Padrão'}</div></div>
+                        <div class="info-item"><label>Cliente</label><div>${info.dest_nome}</div></div>
+                        <div class="info-item"><label>Endereco</label><div>${info.dest_endereco}</div></div>
+                        <div class="info-item"><label>Cidade / UF</label><div>${info.dest_cidade} (CEP: ${info.cep})</div></div>
+                        <div class="info-item"><label>Telefone</label><div>${info.dest_telefone || 'N/A'}</div></div>
+                        <div class="info-item"><label>Data da Venda</label><div>${info.data_venda}</div></div>
+                        <div class="info-item"><label>Valor do Pedido</label><div><strong>R$ ${info.valor_pedido.toFixed(2)}</strong></div></div>
+                        <div class="info-item"><label>Canal</label><div>${info.canal}</div></div>
+                        <div class="info-item"><label>Transportadora ERP</label><div>${info.transportadora_erp}</div></div>
                     </div>
                 </div>
 
+                <!-- PAINEL 2: Itens do Pedido -->
+                <div class="card" style="margin-bottom:16px;border-left:4px solid var(--primary)">
+                    <div class="card-header">
+                        <h2>Itens do Pedido</h2>
+                        <span class="tag tag-cep">${info.items.length} ITEM(NS)</span>
+                    </div>
+                    <table class="items-table">
+                        <thead>
+                            <tr>
+                                <th>SKU</th>
+                                <th>Produto</th>
+                                <th>Qtd</th>
+                                <th>Preco Unit.</th>
+                                <th>Dimensoes (C x L x A)</th>
+                                <th>Peso</th>
+                            </tr>
+                        </thead>
+                        <tbody>${itemsHtml}</tbody>
+                    </table>
+                    <!-- Rodape de Cubagem -->
+                    <div style="display:flex;gap:20px;margin-top:16px;padding-top:12px;border-top:1px solid var(--border);flex-wrap:wrap">
+                        <div class="info-item"><label>Peso Real Total</label><div>${info.total_weight} kg</div></div>
+                        <div class="info-item"><label>Peso Cubado</label><div>${info.peso_cubado} kg</div></div>
+                        <div class="info-item"><label>Peso de Cobranca</label><div><strong>${info.peso_cobranca} kg</strong></div></div>
+                        <div class="info-item"><label>Maior Dimensao</label><div>${info.max_length} cm</div></div>
+                        <div class="info-item"><label>Categoria</label><div>${info.is_big ? '<span style="color:#f87171">&#9888; ITEM BIG</span>' : 'Padrao'}</div></div>
+                    </div>
+                </div>
+
+                <!-- PAINEL 3: Recomendacao de Transportadoras -->
                 <div class="card">
                     <div class="card-header">
-                        <h2>Melhores Opções de Transporte</h2>
+                        <h2>Transportadoras Recomendadas</h2>
                     </div>
-                    <div class="carrier-list">
-                        ${carriersHtml}
-                    </div>
+                    <div class="carrier-list">${carriersHtml}</div>
                 </div>
             `;
         }

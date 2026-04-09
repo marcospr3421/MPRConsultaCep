@@ -115,8 +115,9 @@ def get_db_connection():
 
 def get_order_details(order_number):
     """
-    EXPLICANDO: Esta função faz o 'Raio-X' do pedido.
-    Busca o CEP do cliente, os itens comprados e as medidas físicas de cada um.
+    EXPLICANDO: Esta função faz o 'Raio-X' completo do pedido.
+    Busca o cabecalho (cliente, endereco, canal), os itens com nome e preco,
+    e as medidas fisicas para calculo de cubagem.
     """
     conn = get_db_connection()
     if not conn:
@@ -125,19 +126,40 @@ def get_order_details(order_number):
     try:
         cursor = conn.cursor()
         
-        # 1. Busca o CEP no Pedido
-        cursor.execute("SELECT TOP 1 DestCep FROM PedidosDisponiveis WHERE NumeroDoPedido = ?", (order_number,))
-        res_cep = cursor.fetchone()
-        if not res_cep:
+        # 1. Busca o Cabecalho Completo do Pedido
+        header_q = """
+            SELECT TOP 1
+                DestCep, DestNome, DestEndereco, DestBairro,
+                DestMunicipio, DestEstado, DestTelefone,
+                DataVenda, ValorPedido, Canal, Transportadora, NumeroDoPedido
+            FROM PedidosDisponiveis
+            WHERE NumeroDoPedido = ?
+        """
+        cursor.execute(header_q, (order_number,))
+        header = cursor.fetchone()
+        if not header:
             return None
         
-        target_cep = str(res_cep[0]).replace('-', '').strip().zfill(8)
+        target_cep   = str(header[0] or '').replace('-', '').strip().zfill(8)
+        dest_nome    = str(header[1] or 'N/A')
+        dest_end     = str(header[2] or '')
+        dest_bairro  = str(header[3] or '')
+        dest_cidade  = str(header[4] or '')
+        dest_uf      = str(header[5] or '')
+        dest_tel     = str(header[6] or '')
+        data_venda   = str(header[7] or '')[:10]   # Corta a hora
+        valor_pedido = float(header[8] or 0)
+        canal        = str(header[9] or '')
+        transportadora_erp = str(header[10] or 'Nao definida')
         
-        # 2. Busca Itens, Quantidades e Medidas Fisicas
-        query = """
-            SELECT 
+        # 2. Busca Itens com nome, classe, preco e medidas fisicas
+        items_q = """
+            SELECT
                 i.CodigoProduto,
+                i.NomeProduto,
                 i.Quantidade,
+                i.PrecoUnitarioLiquido,
+                i.Classe,
                 p.Peso, p.Altura, p.Largura, p.Comprimento,
                 c.Categorias
             FROM PedidosDisponiveis h
@@ -146,64 +168,71 @@ def get_order_details(order_number):
             LEFT JOIN vw_ProdutosComCategorias c ON i.CodigoProduto = c.CodigoProduto
             WHERE h.NumeroDoPedido = ?
         """
-        cursor.execute(query, (order_number,))
-        items = cursor.fetchall()
+        cursor.execute(items_q, (order_number,))
+        rows = cursor.fetchall()
         
-        # EXPLICANDO: Agora somamos peso e volume de TODOS os itens,
-        # multiplicando pela quantidade. Isso evita o bug de 2 itens de 20kg
-        # serem tratados como se fossem apenas 20kg no total.
-        total_weight_real = 0.0  # Peso fisico somado de todos os itens
-        total_volume_cm3 = 0.0   # Volume total em cm3 (para calcular peso cubado)
-        max_length = 0.0         # Maior dimensao individual (para restricao de tamanho)
-        is_big = False
-        item_list = []
+        # EXPLICANDO: Acumulamos peso e volume de TODOS os itens * quantidade.
+        total_weight_real = 0.0
+        total_volume_cm3  = 0.0
+        max_length        = 0.0
+        is_big            = False
+        item_list         = []
 
-        for item in items:
-            sku      = item[0]
-            qtd      = float(item[1] or 1)
-            peso     = float(item[2] or 0)
-            altura   = float(item[3] or 0)
-            largura  = float(item[4] or 0)
-            comp     = float(item[5] or 0)
-            cats     = str(item[6] or "").upper()
+        for row in rows:
+            sku      = str(row[0] or '')
+            nome     = str(row[1] or 'Produto sem nome')
+            qtd      = float(row[2] or 1)
+            preco    = float(row[3] or 0)
+            classe   = str(row[4] or '').upper()
+            peso     = float(row[5] or 0)
+            altura   = float(row[6] or 0)
+            largura  = float(row[7] or 0)
+            comp     = float(row[8] or 0)
+            cats     = str(row[9] or '').upper()
 
-            # Acumula peso real: cada item * quantidade
             total_weight_real += peso * qtd
+            total_volume_cm3  += comp * largura * altura * qtd
+            max_length         = max(max_length, comp, altura, largura)
 
-            # Acumula volume: C x L x A x quantidade
-            total_volume_cm3 += comp * largura * altura * qtd
-
-            # A maior dimensao individual ainda importa (restricao de comprimento)
-            max_length = max(max_length, comp, altura, largura)
-
-            if "BIG" in cats or "GIGANTE" in cats:
+            # Verifica BIG tanto na categoria quanto na Classe do item
+            if 'BIG' in cats or 'BIG' in classe or 'GIGANTE' in cats:
                 is_big = True
 
             item_list.append({
-                'sku': sku,
-                'qty': qtd,
-                'weight': peso,
-                'length': comp,
+                'sku':      sku,
+                'nome':     nome,
+                'qty':      int(qtd),
+                'preco':    round(preco, 2),
+                'classe':   classe,
+                'weight':   peso,
+                'altura':   altura,
+                'largura':  largura,
+                'comp':     comp,
                 'category': cats
             })
 
-        # EXPLICANDO: Peso Cubado = volume total / 6000
-        # Regra dos Correios e da maioria das transportadoras:
-        # o frete e cobrado pelo MAIOR entre peso real e peso cubado.
-        peso_cubado = round(total_volume_cm3 / 6000, 2)
-        peso_cobranca = max(total_weight_real, peso_cubado)
+        # EXPLICANDO: Peso Cubado = volume total / 6000 (regra da industria)
+        peso_cubado   = round(total_volume_cm3 / 6000, 2)
+        peso_cobranca = round(max(total_weight_real, peso_cubado), 2)
 
-        results = {
-            'cep': target_cep,
-            'total_weight': round(total_weight_real, 2),
-            'peso_cubado': peso_cubado,
-            'peso_cobranca': peso_cobranca,  # O que a transportadora vai usar
-            'max_length': round(max_length, 2),
-            'is_big': is_big,
-            'items': item_list
+        return {
+            'cep':               target_cep,
+            'dest_nome':         dest_nome,
+            'dest_endereco':     f"{dest_end}, {dest_bairro}",
+            'dest_cidade':       f"{dest_cidade} - {dest_uf}",
+            'dest_telefone':     dest_tel,
+            'data_venda':        data_venda,
+            'valor_pedido':      round(valor_pedido, 2),
+            'canal':             canal,
+            'transportadora_erp': transportadora_erp,
+            'total_weight':      round(total_weight_real, 2),
+            'peso_cubado':       peso_cubado,
+            'peso_cobranca':     peso_cobranca,
+            'max_length':        round(max_length, 2),
+            'is_big':            is_big,
+            'items':             item_list
         }
-            
-        return results
+
     except Exception as e:
         print(f"Error fetching order details: {e}")
         return None
