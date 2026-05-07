@@ -673,12 +673,26 @@ def unified_search():
 
 @app.route('/health')
 def health_check():
-    """Provides a health check endpoint for monitoring.
+    """Health check endpoint for Railway monitoring.
+
+    Verifies DB connectivity in addition to basic liveness.
+    Always returns HTTP 200 (healthy or degraded) so Railway
+    does not restart the container on transient DB hiccups.
 
     Returns:
-        Response: A JSON response indicating the application status.
+        Response: JSON with 'status' ('healthy'|'degraded') and 'db' field.
     """
-    return jsonify({'status': 'healthy'}), 200
+    conn = get_db_connection()
+    db_ok = conn is not None
+    if conn:
+        try:
+            conn.close()
+        except Exception:
+            pass
+    return jsonify({
+        'status': 'healthy' if db_ok else 'degraded',
+        'db': 'connected' if db_ok else 'unreachable'
+    }), 200
 
 if __name__ == '__main__':
     # Initialize token on startup
