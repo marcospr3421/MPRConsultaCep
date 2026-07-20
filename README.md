@@ -96,3 +96,16 @@ Exemplo de configuração dinâmica:
 ## 👨‍💻 Feito por:
 **Marcos Ribeiro | MPR Labs**  
 Desenvolvido com o apoio de IA mentoria técnica Avançada (V6.4 Master Plus Edition).
+
+## Networking - Railway Static Outbound IPs (HA)
+
+> Migrado de Legacy para HA Static IPs em 2026-07-20 (Linear MPR-749).
+
+Trafego de saida deste servico usa os IPs estaticos (SFO): 152.55.176.240, 152.55.177.181, 162.220.232.250
+
+Allowlists que DEVEM conter esses IPs:
+
+- Azure SQL `mprsqlserver` - regras `Railway-HA-1..5`
+- Key Vault `MprKv2024Az` - network rules (defaultAction: Deny)
+
+ATENCAO: se os IPs mudarem (Railway > Settings > Networking), atualizar as allowlists ANTES do redeploy. Runbook: infra-backups/2026-07-20-railway-ha.
