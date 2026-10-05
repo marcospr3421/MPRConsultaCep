@@ -123,3 +123,6 @@ venv.bak/
 .mypy_cache/
 .dmypy.json
 dmypy.json
+# Saidas do ingest_carrier.py
+logs/
+backups/
