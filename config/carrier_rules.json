@@ -24,6 +24,12 @@
         "max_sum_dims_cm": 800,
         "forbidden_categories": []
     },
+    "GLM": {
+        "max_weight_kg": 50,
+        "max_length_cm": 170,
+        "max_item_sum_dims_cm": 240,
+        "forbidden_categories": []
+    },
     "EXCARGO": {
         "max_weight_kg": 1000,
         "max_length_cm": 500,

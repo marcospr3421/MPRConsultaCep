@@ -175,6 +175,7 @@ def get_order_details(order_number):
         total_weight_real = 0.0
         total_volume_cm3  = 0.0
         max_length        = 0.0
+        max_sum_dims      = 0.0
         is_big            = False
         item_list         = []
 
@@ -193,6 +194,7 @@ def get_order_details(order_number):
             total_weight_real += peso * qtd
             total_volume_cm3  += comp * largura * altura * qtd
             max_length         = max(max_length, comp, altura, largura)
+            max_sum_dims       = max(max_sum_dims, comp + altura + largura)
 
             # Verifica BIG tanto na categoria quanto na Classe do item
             if 'BIG' in cats or 'BIG' in classe or 'GIGANTE' in cats:
@@ -229,6 +231,7 @@ def get_order_details(order_number):
             'peso_cubado':       peso_cubado,
             'peso_cobranca':     peso_cobranca,
             'max_length':        round(max_length, 2),
+            'max_sum_dims':      round(max_sum_dims, 2),
             'is_big':            is_big,
             'items':             item_list
         }
@@ -260,6 +263,7 @@ def apply_carrier_rules(carriers, order_info):
             if rule:
                 limite_peso = rule.get('max_weight_kg', 9999)
                 limite_dim  = rule.get('max_length_cm', 9999)
+                limite_soma = rule.get('max_item_sum_dims_cm', 9999)
 
                 # Validacao de Categoria BIG
                 if order_info['is_big'] and rule.get('forbidden_categories'):
@@ -277,6 +281,12 @@ def apply_carrier_rules(carriers, order_info):
                     status = 'Bloqueado'
                     reason = (f"Dimensao ({order_info['max_length']}cm) "
                               f"excede o limite de {limite_dim}cm")
+
+                # Validacao da soma das dimensoes (C+L+A) do maior item
+                elif order_info.get('max_sum_dims', 0) > limite_soma:
+                    status = 'Bloqueado'
+                    reason = (f"Soma das dimensoes ({order_info['max_sum_dims']}cm) "
+                              f"excede o limite de {limite_soma}cm")
             
             c['status'] = status
             c['reason'] = reason
