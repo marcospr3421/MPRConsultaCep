@@ -123,6 +123,7 @@ ALIASES = {
     'GOLLOG': 'GOL LOG',
     'EXCARGO': 'EXCARGO',
     'TERMACO': 'TERMACO',
+    'GLM': 'GLM',
     'CORREIOS': 'CORREIOS'
 }
 
@@ -174,6 +175,7 @@ if __name__ == "__main__":
         'GOLLOG': r'GOLLOG',
         'EXCARGO': r'\(Exc\)',
         'RTE': r'RTE',
+        'GLM': r'GLM',
         'CORREIOS': r'CORREIOS'
     }
     
