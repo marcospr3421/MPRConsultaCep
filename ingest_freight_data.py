@@ -9,8 +9,8 @@ load_dotenv()
 
 # Dicionários de sinônimos para detecção automática de colunas
 KEYWORDS = {
-    'cep_init': ['CEP INICIAL', 'CEP INICIO', 'INICIO FAIXA', 'CEP INCIO', 'CEP START', 'CEP_INICIAL', 'CEP - INICIAL', 'CEP INÍCIO', 'INICIO', 'CEP_INICIO', 'CEP INIC', 'INIC', 'INICIOFAIXACEPDESTINO'],
-    'cep_final': ['CEP FINAL', 'FIM FAIXA', 'CEP END', 'CEP_FINAL', 'CEP - FINAL', 'FIM', 'CEP_FIM', 'FINAL', 'FINALFAIXACEPDESTINO'],
+    'cep_init': ['CEP INICIAL', 'CEP INICIO', 'INICIO FAIXA', 'CEP INCIO', 'CEP START', 'CEP_INICIAL', 'CEP - INICIAL', 'CEP INÍCIO', 'INICIO', 'CEP_INICIO', 'CEP INIC', 'INIC', 'INICIOFAIXACEPDESTINO', 'CEP'],
+    'cep_final': ['CEP FINAL', 'FIM FAIXA', 'CEP END', 'CEP_FINAL', 'CEP - FINAL', 'FIM', 'CEP_FIM', 'FINAL', 'FINALFAIXACEPDESTINO', 'CEP2'],
     'cidade': ['CIDADE', 'MUNICIPIO', 'DESTINO', 'LOCALIDADE', 'CIDADE DESTINO', 'CIDADE DE ATENDIMENTO', 'NOME CIDADE', 'MUNICIPIODESTINO', 'DESCRIÇÃO DO DESTINO', 'MUNICIPIO/DISTRITO'],
     'uf': ['UF', 'ESTADO', 'EST', 'FEDERACAO', 'REGIAO', 'UFDESTINO'],
 }
@@ -72,6 +72,12 @@ def detect_mapping(df_preview):
             
     return None, None
 
+# Abas específicas por transportadora (padrão: primeira aba)
+SHEET_BY_CARRIER = {
+    'RTE': 'ANEXO I',
+    'GLM': 'Abrangência',  # Proposta GLM: faixas de CEP na aba 'Abrangência' (colunas Cep/Cep2)
+}
+
 def process_file(file_path, carrier_name):
     print(f"\n[ANALISANDO] {carrier_name} ({os.path.basename(file_path)})")
     
@@ -80,8 +86,8 @@ def process_file(file_path, carrier_name):
         # Se for .xls usa xlrd, se for .xlsx usa openpyxl
         engine = 'xlrd' if file_path.endswith('.xls') else 'openpyxl'
         
-        # Tenta ler a aba correta (RTE usa ANEXO I, outros geralmente a 0)
-        sheet_to_use = 'ANEXO I' if carrier_name == 'RTE' else 0
+        # Tenta ler a aba correta (algumas transportadoras usam aba específica, outras a 0)
+        sheet_to_use = SHEET_BY_CARRIER.get(carrier_name, 0)
         df_preview = pd.read_excel(file_path, sheet_name=sheet_to_use, header=None, engine=engine)
         
         header_idx, mapping = detect_mapping(df_preview)
