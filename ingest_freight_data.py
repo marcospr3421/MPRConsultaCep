@@ -126,7 +126,6 @@ def process_file(file_path, carrier_name):
 # Isso garante que mesmo que o arquivo tenha outro nome, no site apareça o nome preferido do usuário.
 ALIASES = {
     'RTE': 'RODONAVES',
-    'GOLLOG': 'GOL LOG',
     'EXCARGO': 'EXCARGO',
     'TERMACO': 'TERMACO',
     'GLM': 'GLM',
@@ -136,7 +135,6 @@ ALIASES = {
 # Grupos de limpeza: quando importar uma transportadora desse grupo, apaga todas as variações
 CLEANUP_GROUPS = {
     'RODONAVES': ['RODONAVES', 'RTE'],
-    'GOL LOG': ['GOL LOG', 'GOLLOG'],
     'CORREIOS': ['CORREIOS']
 }
 
@@ -178,7 +176,6 @@ if __name__ == "__main__":
     # Mapeamento simples de arquivos para nomes de transportadoras
     FILE_RULES = {
         'TERMACO': r'TERMACO',
-        'GOLLOG': r'GOLLOG',
         'EXCARGO': r'\(Exc\)',
         'RTE': r'RTE',
         'GLM': r'GLM',

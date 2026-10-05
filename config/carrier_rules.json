@@ -6,12 +6,6 @@
         "extra_fee_threshold_cm": 70,
         "forbidden_categories": ["BIG", "GIGANTE", "PESADO", "EXTRAGRANDE"]
     },
-    "GOL LOG": {
-        "max_weight_kg": 50,
-        "max_length_cm": 120,
-        "max_sum_dims_cm": 250,
-        "forbidden_categories": ["BIG", "GIGANTE"]
-    },
     "RODONAVES": {
         "max_weight_kg": 500,
         "max_length_cm": 300,

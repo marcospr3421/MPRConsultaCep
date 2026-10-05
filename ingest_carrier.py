@@ -1,5 +1,6 @@
 """
-Ingestao de UMA transportadora na TransportTable, com dry-run, backup e transacao.
+Ingestao (ou remocao, com --remove) de UMA transportadora na TransportTable,
+com dry-run, backup e transacao.
 
 Diferente de `ingest_freight_data.py` (que reimporta todas as planilhas da pasta),
 este script mexe apenas nas linhas da transportadora informada:
@@ -66,14 +67,90 @@ def get_transactional_connection():
     return pyodbc.connect(conn_str, autocommit=False)
 
 
+def remove_carrier(carrier, apply, log):
+    """Remove todas as linhas de uma transportadora da TransportTable.
+
+    A comparacao ignora espacos e maiusculas, entao 'GOL LOG' tambem remove 'GOLLOG'.
+
+    Args:
+        carrier (str): Nome da transportadora a remover.
+        apply (bool): Se False, apenas mostra o que seria removido (dry-run).
+        log (logging.Logger): Logger configurado.
+
+    Returns:
+        int: Codigo de saida (0 = sucesso).
+    """
+    key = carrier.replace(" ", "").upper()
+    where = "WHERE REPLACE(UPPER(Transportador), ' ', '') = ?"
+
+    try:
+        conn = get_transactional_connection()
+    except (RuntimeError, pyodbc.Error) as e:
+        log.error(f"Falha ao conectar no banco: {e}")
+        return 1
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute(f"SELECT CepInicial, CepFinal, Cidade, UF, Transportador "
+                       f"FROM TransportTable {where}", key)
+        rows = cursor.fetchall()
+        if not rows:
+            log.info(f"Nenhuma linha de '{carrier}' no banco. Nada a remover.")
+            return 0
+
+        current = pd.DataFrame.from_records(
+            [tuple(r) for r in rows],
+            columns=["CepInicial", "CepFinal", "Cidade", "UF", "Transportador"],
+        )
+        BACKUP_DIR.mkdir(exist_ok=True)
+        safe_name = key.replace("/", "_")
+        backup_file = BACKUP_DIR / f"TransportTable_{safe_name}_{datetime.now():%Y%m%d_%H%M%S}.csv"
+        current.to_csv(backup_file, index=False, encoding="utf-8")
+        names = sorted(current["Transportador"].unique())
+        log.info(f"Backup de {len(current)} linhas ({names}) em {backup_file}")
+
+        if not apply:
+            log.info(f"[DRY-RUN] Removeria {len(current)} linhas de {names}. "
+                     "Rode com --apply para remover.")
+            return 0
+
+        cursor.execute(f"DELETE FROM TransportTable {where}", key)
+        deleted = cursor.rowcount
+        cursor.execute(f"SELECT COUNT(*) FROM TransportTable {where}", key)
+        remaining = cursor.fetchone()[0]
+        if remaining != 0 or deleted != len(current):
+            conn.rollback()
+            log.error(f"Validacao falhou (removidas {deleted}/{len(current)}, restantes {remaining}). "
+                      "ROLLBACK executado, banco inalterado.")
+            return 1
+
+        conn.commit()
+        log.info(f"[OK] COMMIT: {deleted} linhas de {names} removidas. Backup: {backup_file}")
+        return 0
+
+    except pyodbc.Error as e:
+        conn.rollback()
+        log.error(f"Erro no banco, ROLLBACK executado: {e}")
+        return 1
+    finally:
+        conn.close()
+
+
 def main():
     parser = argparse.ArgumentParser(description="Ingestao de uma transportadora na TransportTable")
     parser.add_argument("--carrier", required=True, help="Nome da transportadora (ex: GLM)")
-    parser.add_argument("--file", required=True, help="Caminho da planilha")
+    parser.add_argument("--file", help="Caminho da planilha (obrigatorio, exceto com --remove)")
+    parser.add_argument("--remove", action="store_true",
+                        help="Remove a transportadora do banco em vez de importar")
     parser.add_argument("--apply", action="store_true", help="Grava no banco (sem isso: dry-run)")
     args = parser.parse_args()
+    if not args.remove and not args.file:
+        parser.error("--file e obrigatorio (exceto com --remove)")
 
-    log = setup_logging(args.carrier)
+    log = setup_logging(args.carrier.replace(" ", "_"))
+    if args.remove:
+        return remove_carrier(args.carrier, args.apply, log)
+
     db_name = ingest.ALIASES.get(args.carrier, args.carrier)
     names_to_replace = ingest.CLEANUP_GROUPS.get(db_name, [db_name])
 
@@ -164,6 +241,10 @@ if __name__ == "__main__":
 # Uso:
 #   python ingest_carrier.py --carrier GLM --file "TabelasTransportadoras/GLM - Proposta Comercial AZ 28.04.xlsx"
 #   python ingest_carrier.py --carrier GLM --file "TabelasTransportadoras/GLM - Proposta Comercial AZ 28.04.xlsx" --apply
+#
+# Remover uma transportadora (backup em backups/ antes):
+#   python ingest_carrier.py --carrier "GOL LOG" --remove
+#   python ingest_carrier.py --carrier "GOL LOG" --remove --apply
 #
 # Rollback manual (se precisar remover a GLM depois do commit):
 #   DELETE FROM TransportTable WHERE Transportador = 'GLM';

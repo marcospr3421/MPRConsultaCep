@@ -245,7 +245,7 @@ def get_order_details(order_number):
 def apply_carrier_rules(carriers, order_info):
     """
     EXPLICANDO: Aplica as regras do arquivo rules.json para filtrar transportadoras.
-    Se um item for 'BIG', os Correios e Gol Log são marcados como 'Nao Recomendado'.
+    Se um item for 'BIG', os Correios sao marcados como 'Bloqueado'.
     """
     try:
         rules_path = os.path.join(app.root_path, 'config', 'carrier_rules.json')
