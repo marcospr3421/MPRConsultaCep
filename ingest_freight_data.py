@@ -12,7 +12,7 @@ KEYWORDS = {
     'cep_init': ['CEP INICIAL', 'CEP INICIO', 'INICIO FAIXA', 'CEP INCIO', 'CEP START', 'CEP_INICIAL', 'CEP - INICIAL', 'CEP INÍCIO', 'INICIO', 'CEP_INICIO', 'CEP INIC', 'INIC', 'INICIOFAIXACEPDESTINO', 'CEP'],
     'cep_final': ['CEP FINAL', 'FIM FAIXA', 'CEP END', 'CEP_FINAL', 'CEP - FINAL', 'FIM', 'CEP_FIM', 'FINAL', 'FINALFAIXACEPDESTINO', 'CEP2'],
     'cidade': ['CIDADE', 'MUNICIPIO', 'DESTINO', 'LOCALIDADE', 'CIDADE DESTINO', 'CIDADE DE ATENDIMENTO', 'NOME CIDADE', 'MUNICIPIODESTINO', 'DESCRIÇÃO DO DESTINO', 'MUNICIPIO/DISTRITO'],
-    'uf': ['UF', 'ESTADO', 'EST', 'FEDERACAO', 'REGIAO', 'UFDESTINO'],
+    'uf': ['UF', 'ESTADO', 'EST', 'FEDERACAO', 'UFDESTINO'],
 }
 
 def clean_cep(cep):
@@ -65,7 +65,15 @@ def detect_mapping(df_preview):
                 if syn in row:
                     mapping[key] = row.index(syn)
                     break
-        
+
+        # EXPLICANDO: Algumas planilhas (ex: RTE) têm duas colunas 'UF' (origem e destino).
+        # Nesse caso usamos a primeira UF que aparece depois da coluna de cidade (destino).
+        if 'uf' in mapping and 'cidade' in mapping:
+            uf_name = row[mapping['uf']]
+            after_city = [j for j, v in enumerate(row) if v == uf_name and j > mapping['cidade']]
+            if after_city:
+                mapping['uf'] = after_city[0]
+
         # Se achamos pelo menos as colunas essenciais de CEP
         if 'cep_init' in mapping and 'cep_final' in mapping:
             return i, mapping
@@ -76,6 +84,11 @@ def detect_mapping(df_preview):
 SHEET_BY_CARRIER = {
     'RTE': 'ANEXO I',
     'GLM': 'Abrangência',  # Proposta GLM: faixas de CEP na aba 'Abrangência' (colunas Cep/Cep2)
+}
+
+# UF fixa para planilhas sem coluna de UF (ex: EXCARGO só atende SP)
+DEFAULT_UF_BY_CARRIER = {
+    'EXCARGO': 'SP',
 }
 
 def process_file(file_path, carrier_name):
@@ -106,8 +119,8 @@ def process_file(file_path, carrier_name):
         final_df['cepFinal'] = df_preview.iloc[header_idx+1:, mapping['cep_final']].apply(clean_cep)
         
         # Cidade e UF podem ser opcionais se não encontradas
-        final_df['Cidade'] = df_preview.iloc[header_idx+1:, mapping['cidade']].astype(str).str.upper() if 'cidade' in mapping else 'N/A'
-        final_df['UF'] = df_preview.iloc[header_idx+1:, mapping['uf']].astype(str).str.upper() if 'uf' in mapping else 'N/A'
+        final_df['Cidade'] = df_preview.iloc[header_idx+1:, mapping['cidade']].astype(str).str.strip().str.upper() if 'cidade' in mapping else 'N/A'
+        final_df['UF'] = df_preview.iloc[header_idx+1:, mapping['uf']].astype(str).str.strip().str.upper() if 'uf' in mapping else DEFAULT_UF_BY_CARRIER.get(carrier_name, 'N/A')
         final_df['Transportador'] = carrier_name
         
         # Limpeza final
